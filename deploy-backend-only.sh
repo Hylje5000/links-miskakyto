@@ -13,6 +13,14 @@ if [[ $EUID -eq 0 ]]; then
    exit 1
 fi
 
+# Get the current directory (should be the cloned repo)
+REPO_DIR=$(pwd)
+echo "📁 Working from repository: $REPO_DIR"
+
+# Ensure we own the repository files
+echo "🔧 Fixing repository permissions..."
+sudo chown -R $USER:$USER $REPO_DIR
+
 # Install Docker and Docker Compose if needed
 if ! command -v docker &> /dev/null; then
     echo "📦 Installing Docker..."
@@ -20,6 +28,8 @@ if ! command -v docker &> /dev/null; then
     sudo sh get-docker.sh
     sudo usermod -aG docker $USER
     rm get-docker.sh
+    echo "⚠️  Docker installed. You may need to log out and back in for Docker group membership to take effect."
+    echo "   Or run: newgrp docker"
 fi
 
 if ! command -v docker-compose &> /dev/null; then
@@ -44,15 +54,20 @@ sudo chmod 755 $APP_DIR/data
 
 # Copy deployment files
 echo "📋 Setting up configuration..."
-cp docker-compose.standalone.yml $APP_DIR/docker-compose.yml
-cp backend/.env.production $APP_DIR/.env.example
-cp manage-backend.sh $APP_DIR/manage.sh
-chmod +x $APP_DIR/manage.sh
+sudo cp docker-compose.standalone.yml $APP_DIR/docker-compose.yml
+sudo cp backend/.env.production $APP_DIR/.env.example
+sudo cp manage-backend.sh $APP_DIR/manage.sh
+sudo chmod +x $APP_DIR/manage.sh
+sudo chown $USER:$USER $APP_DIR/manage.sh
 
 # Copy additional files
-cp nginx-integration.conf $APP_DIR/
-cp verify-integration.sh $APP_DIR/
-chmod +x $APP_DIR/verify-integration.sh
+sudo cp nginx-integration.conf $APP_DIR/
+sudo cp verify-integration.sh $APP_DIR/
+sudo chmod +x $APP_DIR/verify-integration.sh
+sudo chown $USER:$USER $APP_DIR/verify-integration.sh
+
+# Ensure all files in the app directory are owned by the user
+sudo chown -R $USER:$USER $APP_DIR
 
 # Create systemd service for auto-start
 echo "⚙️  Creating systemd service..."
