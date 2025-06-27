@@ -9,7 +9,17 @@ This guide covers deploying the Link Shortener backend using Docker on your Azur
 - SSH access to your VM
 - Azure AD app registration configured
 
-## 🔧 Quick Deployment
+## 🔄 Deployment Options
+
+### Option A: Standalone Deployment (New Server)
+Use this if you have a dedicated server/VM for the Link Shortener.
+
+### Option B: Integration with Existing Web Server
+Use this if your VM already serves other websites on ports 80/443.
+
+## 🔧 Option A: Standalone Deployment
+
+Use this for a dedicated server where you want the Link Shortener to manage its own nginx and SSL.
 
 ### 1. Clone Repository on VM
 
@@ -51,15 +61,123 @@ docker-compose up -d
 ./manage.sh status
 ```
 
+## 🔗 Option B: Integration with Existing Web Server
+
+Use this if your VM already hosts other websites on ports 80/443.
+
+### 1. Deploy Backend Only
+
+```bash
+# SSH into your Azure VM
+ssh user@your-vm-ip
+
+# Clone the repository
+git clone <your-repo-url> /opt/linkshortener
+cd /opt/linkshortener
+
+# Run backend-only deployment
+sudo ./deploy-backend-only.sh
+```
+
+### 2. Configure Environment
+
+```bash
+# Copy and edit environment file
+cp /opt/linkshortener/.env.example /opt/linkshortener/.env
+nano /opt/linkshortener/.env
+```
+
+Fill in your Azure AD details:
+```env
+AZURE_TENANT_ID=your-tenant-id
+AZURE_CLIENT_ID=your-client-id
+BASE_URL=https://links.miskakyto.fi
+ALLOWED_ORIGINS=https://links.miskakyto.fi
+```
+
+### 3. Configure Your Existing Nginx
+
+Add this configuration to your existing nginx setup:
+
+```nginx
+# Add to your http block
+upstream linkshortener_backend {
+    server 127.0.0.1:8000;
+}
+
+# Rate limiting (if not already configured)
+limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=shorturl:10m rate=30r/s;
+
+# Add to your existing server block for links.miskakyto.fi
+server {
+    listen 443 ssl http2;
+    server_name links.miskakyto.fi;
+    
+    # Your existing SSL configuration...
+
+    # Link Shortener API routes
+    location /api/ {
+        limit_req zone=api burst=20 nodelay;
+        proxy_pass http://linkshortener_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Health check
+    location /health {
+        proxy_pass http://linkshortener_backend/health;
+        access_log off;
+    }
+
+    # Short URL redirects
+    location ~* ^/([a-zA-Z0-9]{6})$ {
+        limit_req zone=shorturl burst=50 nodelay;
+        proxy_pass http://linkshortener_backend/$1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    
+    # Your other location blocks...
+}
+```
+
+### 4. Test and Start Services
+
+```bash
+# Test nginx configuration
+sudo nginx -t
+
+# Reload nginx
+sudo systemctl reload nginx
+
+# Start Link Shortener backend
+cd /opt/linkshortener
+docker-compose up -d
+
+# Check status
+./manage.sh status
+```
+
 ## 🏗️ Architecture
 
+### Option A - Standalone
 ```
 Internet → Nginx (Port 80/443) → FastAPI Backend (Port 8000) → SQLite Database
 ```
 
+### Option B - Integrated
+```
+Internet → Your Existing Nginx (Port 80/443) → FastAPI Backend (Port 8000) → SQLite Database
+```
+
 ### Components:
-- **Nginx**: Reverse proxy, SSL termination, rate limiting
-- **FastAPI**: Backend API with authentication
+- **Your Existing Nginx**: Handles SSL, routes requests to backend
+- **FastAPI**: Backend API with authentication (runs on port 8000)
 - **SQLite**: Database (mounted as volume for persistence)
 
 ## 🔒 SSL Configuration
