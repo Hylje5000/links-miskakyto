@@ -1,0 +1,36 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Backend (Python)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/backend/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/backend",
+            "python": "/Users/miskakyto/Documents/Coding/LinkShortener/.venv/bin/python",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend"
+            }
+        },
+        {
+            "name": "Debug Frontend (Next.js)",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/node_modules/.bin/next",
+            "args": ["dev"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "skipFiles": ["<node_internals>/**"]
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Debug Full Application",
+            "configurations": [
+                "Debug Backend (Python)",
+                "Debug Frontend (Next.js)"
+            ]
+        }
+    ]
+}

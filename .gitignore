@@ -39,3 +39,41 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Backend Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Test coverage
+htmlcov/
+.coverage
+.coverage.*
+.cache
+pytest_cache/
+
+# IDEs
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Backup files
+*.bak
+*.backup
+page_old.tsx
+page_new.tsx
+
+# Logs
+*.log
