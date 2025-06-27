@@ -38,15 +38,21 @@ fi
 
 # Create data directory for database
 echo "📁 Creating data directory..."
-mkdir -p $APP_DIR/data
-chmod 755 $APP_DIR/data
+sudo mkdir -p $APP_DIR/data
+sudo chown $USER:$USER $APP_DIR/data
+sudo chmod 755 $APP_DIR/data
 
 # Copy deployment files
 echo "📋 Setting up configuration..."
 cp docker-compose.standalone.yml $APP_DIR/docker-compose.yml
 cp backend/.env.production $APP_DIR/.env.example
-cp manage.sh $APP_DIR/
+cp manage-backend.sh $APP_DIR/manage.sh
 chmod +x $APP_DIR/manage.sh
+
+# Copy additional files
+cp nginx-integration.conf $APP_DIR/
+cp verify-integration.sh $APP_DIR/
+chmod +x $APP_DIR/verify-integration.sh
 
 # Create systemd service for auto-start
 echo "⚙️  Creating systemd service..."
@@ -80,15 +86,20 @@ echo "   cp $APP_DIR/.env.example $APP_DIR/.env"
 echo "   nano $APP_DIR/.env"
 echo ""
 echo "2. Configure your existing nginx to proxy to port 8000:"
-echo "   - Add the configuration from nginx-integration.conf"
+echo "   - Review the template: cat $APP_DIR/nginx-integration.conf"
+echo "   - Add the configuration to your existing nginx setup"
 echo "   - Test: sudo nginx -t"
 echo "   - Reload: sudo systemctl reload nginx"
 echo ""
 echo "3. Start the backend service:"
 echo "   cd $APP_DIR && docker-compose up -d"
 echo ""
-echo "4. Check status:"
-echo "   ./manage.sh status"
+echo "4. Verify the integration:"
+echo "   cd $APP_DIR && ./verify-integration.sh"
+echo ""
+echo "5. Check status:"
+echo "   cd $APP_DIR && ./manage.sh status"
 echo ""
 echo "🌐 Backend will be available at: http://localhost:8000"
 echo "🔗 Configure your nginx to proxy links.miskakyto.fi to port 8000"
+echo "📁 All files are in: $APP_DIR"
