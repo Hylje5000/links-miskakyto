@@ -72,7 +72,17 @@ class AnalyticsResponse(BaseModel):
 # Database path helper
 def get_db_path():
     # Use test database if environment variable is set
-    return os.getenv('TEST_DB_PATH', 'links.db')
+    test_db = os.getenv('TEST_DB_PATH')
+    if test_db:
+        return test_db
+    
+    # In production, use /app/data directory for persistence
+    if os.getenv('PRODUCTION', 'false').lower() == 'true':
+        os.makedirs('/app/data', exist_ok=True)
+        return '/app/data/links.db'
+    
+    # Default to local directory for development
+    return 'links.db'
 
 # Database initialization
 async def init_db():
