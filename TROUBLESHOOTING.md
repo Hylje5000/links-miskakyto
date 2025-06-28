@@ -91,100 +91,44 @@ curl https://links.miskakyto.fi/health
 curl https://links.miskakyto.fi/api/health
 ```
 
-### 2. API Redirect Loops (301/307) - ERR_TOO_MANY_REDIRECTS
+### 2. API Redirect Loops (301/307) - ERR_TOO_MANY_REDIRECTS ✅ FIXED
 
 **Problem:** Accessing `/api` causes redirect loops with 301 and 307 responses, browser shows ERR_TOO_MANY_REDIRECTS.
 
-**Root Cause:** Likely nginx configuration conflict between external nginx and internal Docker nginx.
+**Root Cause:** ✅ **IDENTIFIED AND FIXED** - Internal Docker nginx configuration had incorrect `proxy_pass` directive.
 
-**Immediate Debug Steps:**
+**The Fix:** Changed `nginx-docker.conf`:
+```nginx
+# BEFORE (caused redirects):
+location /api/ {
+    proxy_pass http://backend;  # Missing /api/ in target
+}
 
-#### Step 1: Check external nginx configuration
-```bash
-# SSH into VM
-ssh miska@4.210.156.244
-
-# Check current nginx config
-sudo cat /etc/nginx/sites-available/linkshortener
-
-# Look for problematic patterns:
-# 1. Missing trailing slash handling
-# 2. Conflicting location blocks
-# 3. Incorrect proxy_pass URLs
+# AFTER (fixed):
+location /api/ {
+    proxy_pass http://backend/api/;  # Correct path mapping
+}
 ```
 
-#### Step 2: Test internal vs external routing
+**What was happening:**
+1. External nginx: `https://links.miskakyto.fi/api/` → `http://localhost:8080/api/` ✅
+2. Internal Docker nginx: `http://localhost:8080/api/` → `http://backend` (redirected to `http://localhost/api`) ❌
+3. This created an infinite redirect loop between the two nginx instances
+
+**Test the fix after deployment:**
+```bash
+# These should now work without redirects:
+curl -I https://links.miskakyto.fi/api/health
+curl -I http://localhost:8080/api/health
+```
+
+**If still having issues, try manual restart:**
 ```bash
 cd /home/miska/linkshortener
-
-# Test internal Docker stack (should work)
-curl -v http://localhost:8080/api/ 2>&1 | grep -E "HTTP|Location"
-
-# Test external nginx (problematic)
-curl -v https://links.miskakyto.fi/api/ 2>&1 | grep -E "HTTP|Location"
-
-# Compare the responses - look for redirect chains
+./manage-fullstack.sh stop
+./manage-fullstack.sh start
+# Wait for containers to rebuild with new nginx config
 ```
-
-#### Step 3: Check for trailing slash issues
-```bash
-# Test different API path variations
-curl -I http://localhost:8080/api          # No trailing slash
-curl -I http://localhost:8080/api/         # With trailing slash
-curl -I http://localhost:8080/api/health   # Specific endpoint
-
-# Test same on external
-curl -I https://links.miskakyto.fi/api     # Likely causes redirects
-curl -I https://links.miskakyto.fi/api/    # Might work
-curl -I https://links.miskakyto.fi/api/health  # Should work if routing is correct
-```
-
-**Common Fix - Update external nginx config:**
-
-```bash
-# Edit nginx configuration
-sudo nano /etc/nginx/sites-available/linkshortener
-
-# Find the API location block and fix it:
-# WRONG (causes redirects):
-location /api {
-    proxy_pass http://127.0.0.1:8080/api;
-}
-
-# CORRECT (prevents redirects):
-location /api/ {
-    proxy_pass http://127.0.0.1:8080/api/;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-}
-
-# Also add a redirect for /api without trailing slash:
-location = /api {
-    return 301 $scheme://$server_name/api/;
-}
-
-# Test and reload nginx
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-**Alternative Quick Fix - Check current config:**
-
-```bash
-# Show current nginx config
-sudo grep -A 10 -B 2 "location.*api" /etc/nginx/sites-available/linkshortener
-
-# If the above shows problems, you can temporarily disable API routing:
-# Comment out the problematic location block, reload nginx, then fix it properly
-```
-
-**Possible Causes:**
-1. **Nginx redirect loop** - External nginx redirecting to internal nginx incorrectly
-2. **Trailing slash issues** - Nginx adding/removing trailing slashes in a loop
-3. **HTTPS/HTTP mixed routing** - Protocol mismatches causing redirect chains
-4. **Conflicting location blocks** - Multiple rules trying to handle /api
 
 ### 3. Docker Build Issues
 
