@@ -10,7 +10,7 @@ on:
 env:
   VM_HOST: 4.210.156.244
   VM_USER: miska
-  DEPLOY_PATH: /opt/linkshortener
+  DEPLOY_PATH: /home/miska/linkshortener
 
 jobs:
   test:
@@ -65,11 +65,8 @@ jobs:
           set -e
           echo "🚀 Starting deployment..."
           
-          # Create application directory if it doesn't exist
-          sudo mkdir -p ${{ env.DEPLOY_PATH }}
-          sudo chown ${{ env.VM_USER }}:${{ env.VM_USER }} ${{ env.DEPLOY_PATH }}
-          
-          # Navigate to application directory
+          # Navigate to application directory (create if needed)
+          mkdir -p ${{ env.DEPLOY_PATH }}
           cd ${{ env.DEPLOY_PATH }}
           
           # Stop services if running

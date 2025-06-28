@@ -53,7 +53,7 @@ TEST_MODE=false
 
 ## Deployment Environment File
 
-For your VM deployment, create `/opt/linkshortener/.env` with:
+For your VM deployment, create `/home/miska/linkshortener/.env` with:
 
 ```bash
 # Minimum required configuration
