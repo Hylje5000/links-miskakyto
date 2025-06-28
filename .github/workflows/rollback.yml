@@ -1,0 +1,83 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Commit SHA to rollback to (leave empty for previous commit)'
+        required: false
+        type: string
+
+env:
+  VM_HOST: 4.210.156.244
+  VM_USER: miska
+  DEPLOY_PATH: /opt/linkshortener
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    name: Rollback to Previous Version
+    
+    steps:
+    - name: Rollback on Azure VM
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ env.VM_HOST }}
+        username: ${{ env.VM_USER }}
+        key: ${{ secrets.VM_SSH_KEY }}
+        port: 22
+        script: |
+          set -e
+          echo "🔄 Starting rollback..."
+          
+          # Navigate to application directory
+          cd ${{ env.DEPLOY_PATH }}
+          
+          # Determine target commit
+          if [ -n "${{ github.event.inputs.commit_sha }}" ]; then
+            TARGET_COMMIT="${{ github.event.inputs.commit_sha }}"
+            echo "📍 Rolling back to specified commit: $TARGET_COMMIT"
+          else
+            TARGET_COMMIT=$(git rev-parse HEAD~1)
+            echo "📍 Rolling back to previous commit: $TARGET_COMMIT"
+          fi
+          
+          # Stop services
+          echo "🛑 Stopping services..."
+          ./manage-fullstack.sh stop || true
+          
+          # Create backup of current state
+          BACKUP_BRANCH="backup-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b $BACKUP_BRANCH
+          git push origin $BACKUP_BRANCH || true
+          echo "💾 Created backup branch: $BACKUP_BRANCH"
+          
+          # Rollback to target commit
+          git checkout main
+          git reset --hard $TARGET_COMMIT
+          
+          # Rebuild and restart
+          echo "🏗️ Rebuilding containers..."
+          ./manage-fullstack.sh build
+          
+          echo "🚀 Starting services..."
+          ./manage-fullstack.sh start
+          
+          # Wait for services to start
+          sleep 15
+          
+          # Health check
+          echo "🏥 Running health checks..."
+          ./manage-fullstack.sh status
+          
+          # Test endpoints
+          echo "🧪 Testing endpoints..."
+          curl -f http://localhost:8080/health || {
+            echo "❌ Rollback health check failed"
+            ./manage-fullstack.sh logs
+            exit 1
+          }
+          
+          echo "✅ Rollback completed successfully!"
+          echo "📍 Current commit: $(git rev-parse HEAD)"
+          echo "💾 Backup available in branch: $BACKUP_BRANCH"

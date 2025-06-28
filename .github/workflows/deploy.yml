@@ -1,0 +1,128 @@
+name: Deploy to Azure VM
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [ closed ]
+
+env:
+  VM_HOST: 4.210.156.244
+  VM_USER: miska
+  DEPLOY_PATH: /opt/linkshortener
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Run Tests
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run frontend tests
+      run: npm test -- --passWithNoTests --watchAll=false
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install Python dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+    
+    - name: Run backend tests
+      run: |
+        cd backend
+        python -m pytest
+
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to VM
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Deploy to Azure VM
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ env.VM_HOST }}
+        username: ${{ env.VM_USER }}
+        key: ${{ secrets.VM_SSH_KEY }}
+        port: 22
+        script: |
+          set -e
+          echo "🚀 Starting deployment..."
+          
+          # Navigate to application directory
+          cd ${{ env.DEPLOY_PATH }}
+          
+          # Stop services if running
+          echo "🛑 Stopping services..."
+          ./manage-fullstack.sh stop || true
+          
+          # Pull latest changes
+          echo "📥 Pulling latest changes..."
+          git fetch origin
+          git reset --hard origin/main
+          
+          # Set up environment (preserve existing .env)
+          if [ ! -f .env ]; then
+            echo "⚠️ No .env file found. Please configure manually."
+            cp backend/.env.production .env.example
+          fi
+          
+          # Build and deploy
+          echo "🏗️ Building containers..."
+          ./manage-fullstack.sh build
+          
+          echo "🚀 Starting services..."
+          ./manage-fullstack.sh start
+          
+          # Wait a moment for services to start
+          sleep 10
+          
+          # Health check
+          echo "🏥 Running health checks..."
+          ./manage-fullstack.sh status
+          
+          # Test endpoints
+          echo "🧪 Testing endpoints..."
+          curl -f http://localhost:8080/health || {
+            echo "❌ Health check failed"
+            ./manage-fullstack.sh logs
+            exit 1
+          }
+          
+          echo "✅ Deployment completed successfully!"
+
+  deploy-notification:
+    runs-on: ubuntu-latest
+    name: Deployment Notification
+    needs: deploy
+    if: always()
+    
+    steps:
+    - name: Deployment Success
+      if: needs.deploy.result == 'success'
+      run: |
+        echo "✅ Deployment to ${{ env.VM_HOST }} was successful!"
+        echo "🌐 Application is available at: https://links.miskakyto.fi"
+    
+    - name: Deployment Failure
+      if: needs.deploy.result == 'failure'
+      run: |
+        echo "❌ Deployment to ${{ env.VM_HOST }} failed!"
+        echo "Please check the logs and deploy manually if needed."
+        exit 1
