@@ -5,14 +5,19 @@ FROM node:18-alpine AS base
 FROM base AS deps
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
+# Install production dependencies for runtime
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+RUN npm ci --only=production && npm cache clean --force
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+
+# Copy package files and install all dependencies (including dev dependencies)
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Copy source code
 COPY . .
 
 # Build the application
@@ -26,6 +31,9 @@ ENV NODE_ENV production
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
+
+# Copy production dependencies
+COPY --from=deps /app/node_modules ./node_modules
 
 # Copy the built application
 COPY --from=builder /app/public ./public
