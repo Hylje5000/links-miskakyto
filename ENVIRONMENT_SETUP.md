@@ -55,12 +55,26 @@ TEST_MODE=false
 
 For your VM deployment, create `/home/miska/linkshortener/.env` with:
 
+### Phase 1 (HTTP Initial Setup):
 ```bash
 # Minimum required configuration
 AZURE_TENANT_ID=your-actual-tenant-id
 AZURE_CLIENT_ID=your-actual-client-id
 
-# Production settings
+# Production settings (HTTP for initial setup)
+BASE_URL=http://links.miskakyto.fi
+ALLOWED_ORIGINS=http://links.miskakyto.fi
+DATABASE_URL=sqlite:///data/links.db
+PRODUCTION=true
+```
+
+### Phase 2 (After SSL Setup):
+```bash
+# Minimum required configuration
+AZURE_TENANT_ID=your-actual-tenant-id
+AZURE_CLIENT_ID=your-actual-client-id
+
+# Production settings (HTTPS after SSL is configured)
 BASE_URL=https://links.miskakyto.fi
 ALLOWED_ORIGINS=https://links.miskakyto.fi
 DATABASE_URL=sqlite:///data/links.db
