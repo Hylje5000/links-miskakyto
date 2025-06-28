@@ -9,7 +9,7 @@ on:
 env:
   VM_HOST: 4.210.156.244
   VM_USER: miska
-  DEPLOY_PATH: /opt/linkshortener
+  DEPLOY_PATH: /home/miska/linkshortener
 
 jobs:
   health-check:
@@ -34,20 +34,28 @@ jobs:
           echo "📊 Container status:"
           ./manage-fullstack.sh status
           
-          # Test health endpoint
+          # Test health endpoint (try both HTTP and HTTPS)
           echo "🌐 Testing health endpoint..."
-          curl -f http://localhost:8080/health || {
-            echo "❌ Health endpoint failed"
+          if curl -f -s http://localhost:8080/api/health > /dev/null 2>&1; then
+            echo "✅ Health endpoint working (HTTP)"
+          elif curl -f -s -k https://links.miskakyto.fi/health > /dev/null 2>&1; then
+            echo "✅ Health endpoint working (HTTPS)"
+          else
+            echo "❌ Health endpoint failed on both HTTP and HTTPS"
             echo "📋 Container logs:"
             ./manage-fullstack.sh logs --tail=50
             exit 1
-          }
+          fi
           
-          # Test frontend
+          # Test frontend (try both protocols)
           echo "🖥️ Testing frontend..."
-          curl -s -I http://localhost:8080 | head -1 | grep -q "200\|301\|302" || {
-            echo "❌ Frontend not responding"
-            ./manage-fullstack.sh logs-frontend --tail=20
+          if curl -s -I http://localhost:8080 | head -1 | grep -q "200\|301\|302"; then
+            echo "✅ Frontend responding (HTTP)"
+          elif curl -s -I -k https://links.miskakyto.fi | head -1 | grep -q "200\|301\|302"; then
+            echo "✅ Frontend responding (HTTPS)"
+          else
+            echo "❌ Frontend not responding on either protocol"
+            ./manage-fullstack.sh logs frontend --tail=20
             exit 1
           }
           

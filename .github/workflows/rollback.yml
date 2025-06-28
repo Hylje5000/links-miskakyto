@@ -11,7 +11,7 @@ on:
 env:
   VM_HOST: 4.210.156.244
   VM_USER: miska
-  DEPLOY_PATH: /opt/linkshortener
+  DEPLOY_PATH: /home/miska/linkshortener
 
 jobs:
   rollback:
