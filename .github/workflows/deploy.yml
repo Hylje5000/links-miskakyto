@@ -65,42 +65,53 @@ jobs:
           set -e
           echo "🚀 Starting deployment..."
           
+          # Create application directory if it doesn't exist
+          sudo mkdir -p ${{ env.DEPLOY_PATH }}
+          sudo chown ${{ env.VM_USER }}:${{ env.VM_USER }} ${{ env.DEPLOY_PATH }}
+          
           # Navigate to application directory
           cd ${{ env.DEPLOY_PATH }}
           
           # Stop services if running
           echo "🛑 Stopping services..."
-          ./manage-fullstack.sh stop || true
+          if [ -f manage-fullstack.sh ]; then
+            chmod +x manage-fullstack.sh
+            ./manage-fullstack.sh stop || true
+          fi
+          
+          # Initialize git repository if needed
+          if [ ! -d .git ]; then
+            echo "📦 Initializing git repository..."
+            git init
+            git remote add origin https://github.com/${{ github.repository }}.git
+          fi
           
           # Pull latest changes
           echo "📥 Pulling latest changes..."
-          git fetch origin
+          git fetch origin main
           git reset --hard origin/main
+          
+          # Make scripts executable
+          chmod +x manage-fullstack.sh
           
           # Set up environment (preserve existing .env)
           if [ ! -f .env ]; then
-            echo "⚠️ No .env file found. Please configure manually."
-            cp backend/.env.production .env.example
+            echo "⚠️ No .env file found. Creating from template..."
+            cp backend/.env.production .env
+            echo "❗ Please configure .env file with your Azure AD credentials"
           fi
           
-          # Build and deploy
-          echo "🏗️ Building containers..."
-          ./manage-fullstack.sh build
-          
-          echo "🚀 Starting services..."
+          # Start services (this will build containers automatically)
+          echo "🏗️ Building and starting services..."
           ./manage-fullstack.sh start
           
-          # Wait a moment for services to start
-          sleep 10
+          # Wait for services to start
+          sleep 15
           
           # Health check
           echo "🏥 Running health checks..."
-          ./manage-fullstack.sh status
-          
-          # Test endpoints
-          echo "🧪 Testing endpoints..."
-          curl -f http://localhost:8080/health || {
-            echo "❌ Health check failed"
+          ./manage-fullstack.sh health || {
+            echo "❌ Health check failed, showing logs..."
             ./manage-fullstack.sh logs
             exit 1
           }
