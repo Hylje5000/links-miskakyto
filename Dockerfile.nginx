@@ -1,0 +1,13 @@
+# Nginx Dockerfile for reverse proxy
+FROM nginx:alpine
+
+# Copy custom nginx configuration
+COPY nginx-docker.conf /etc/nginx/nginx.conf
+
+# Create directories for frontend assets
+RUN mkdir -p /var/www/html
+
+# Expose port 80
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
