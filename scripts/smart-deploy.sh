@@ -6,6 +6,16 @@ set -e
 echo "🔍 Smart Deployment - Detecting Changes"
 echo "======================================="
 
+# Load environment variables from .env file at the start
+if [ -f .env ]; then
+    echo "📋 Loading environment variables from .env"
+    set -a  # automatically export all variables
+    source .env
+    set +a  # stop automatically exporting
+else
+    echo "⚠️ No .env file found, using defaults"
+fi
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -89,12 +99,6 @@ if [ "$REBUILD_BACKEND" = false ] && [ "$REBUILD_FRONTEND" = false ] && [ "$REBU
         fi
     else
         print_info "🚀 Containers not running, starting existing images..."
-        # Load environment variables
-        if [ -f .env ]; then
-            set -a
-            source .env
-            set +a
-        fi
         docker-compose -f docker/docker-compose.fullstack.yml up -d
         sleep 30
         
@@ -136,16 +140,6 @@ fi
 export BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 export VCS_REF=$CURRENT_COMMIT
 
-# Load environment variables from .env file if it exists
-if [ -f .env ]; then
-    print_info "📋 Loading environment variables from .env"
-    set -a  # automatically export all variables
-    source .env
-    set +a  # stop automatically exporting
-else
-    print_info "⚠️ No .env file found, using defaults"
-fi
-
 if [ -n "$BUILD_ARGS" ]; then
     print_status "🔨 Building changed services: $BUILD_ARGS"
     docker-compose -f docker/docker-compose.fullstack.yml build $BUILD_ARGS
@@ -153,12 +147,6 @@ fi
 
 # Start all containers
 print_status "🚀 Starting containers..."
-# Load environment variables for startup as well
-if [ -f .env ]; then
-    set -a
-    source .env
-    set +a
-fi
 docker-compose -f docker/docker-compose.fullstack.yml up -d
 
 # Wait for startup
