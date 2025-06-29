@@ -194,3 +194,36 @@ async def debug_analyze_token(request_data: dict):
             "token_length": len(token),
             "token_preview": token[:50] + "..." if len(token) > 50 else token
         }
+
+
+@router.get("/debug/auth-status")
+async def debug_auth_status():
+    """Debug endpoint to check current authentication status and last errors."""
+    import logging
+    import io
+    
+    # Capture recent logs
+    log_capture = io.StringIO()
+    handler = logging.StreamHandler(log_capture)
+    handler.setLevel(logging.INFO)
+    
+    # Get the auth logger
+    auth_logger = logging.getLogger('auth')
+    auth_logger.addHandler(handler)
+    
+    return {
+        "message": "Check authentication by making a request to /api/links",
+        "debug_info": {
+            "test_mode": settings.test_mode,
+            "azure_tenant_id_configured": bool(settings.azure_tenant_id),
+            "azure_client_id_configured": bool(settings.azure_client_id),
+            "expected_audience": settings.azure_client_id,
+            "expected_issuer": f"https://login.microsoftonline.com/{settings.azure_tenant_id}/v2.0"
+        },
+        "instructions": [
+            "1. Open browser dev tools console",
+            "2. Make a request to /api/links",
+            "3. Check the response and any console errors",
+            "4. The detailed auth logs will appear in backend logs"
+        ]
+    }

@@ -86,7 +86,7 @@ class LinkService:
                 click_count=link["click_count"],
                 created_at=link["created_at"],
                 created_by=link["created_by"],
-                created_by_name=link["created_by_name"],
+                created_by_name=link.get("created_by_name", "Unknown User"),
                 tenant_id=link["tenant_id"]
             )
             for link in links
@@ -112,7 +112,7 @@ class LinkService:
             click_count=link["click_count"],
             created_at=link["created_at"],
             created_by=link["created_by"],
-            created_by_name=link["created_by_name"],
+            created_by_name=link.get("created_by_name", "Unknown User"),
             tenant_id=link["tenant_id"]
         )
     
@@ -143,7 +143,7 @@ class LinkService:
             click_count=updated_link["click_count"],
             created_at=updated_link["created_at"],
             created_by=updated_link["created_by"],
-            created_by_name=updated_link["created_by_name"],
+            created_by_name=updated_link.get("created_by_name", "Unknown User"),
             tenant_id=updated_link["tenant_id"]
         )
     
