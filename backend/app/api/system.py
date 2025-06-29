@@ -125,6 +125,16 @@ async def debug_auth_check():
     }
 
 
+@router.get("/debug/test-auth")
+async def debug_test_auth():
+    """Simple endpoint to test if debug routes are working."""
+    return {
+        "message": "Debug endpoint is working!",
+        "timestamp": datetime.now().isoformat(),
+        "test_mode": settings.test_mode
+    }
+
+
 @router.post("/debug/analyze-token")
 async def debug_analyze_token(request_data: dict):
     """Debug endpoint to analyze what token is being sent."""
