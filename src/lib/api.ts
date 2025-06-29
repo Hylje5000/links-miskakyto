@@ -73,6 +73,11 @@ api.interceptors.request.use(async (config) => {
               console.log('  - Expected audience:', clientId);
               console.log('  - Token type:', tokenPayload.idtyp || 'not set');
               
+              // Log the actual token for debugging (first 50 chars only for security)
+              console.log('🔍 Token debug info:');
+              console.log('  - Token preview:', response.idToken.substring(0, 50) + '...');
+              console.log('  - Full token (for debugging):', response.idToken);
+              
               // Use the ID token regardless - let the backend validate it
               config.headers.Authorization = `Bearer ${response.idToken}`;
               console.log('🔑 Using ID token for authentication');
@@ -80,6 +85,7 @@ api.interceptors.request.use(async (config) => {
               return config;
             } catch (decodeError) {
               console.warn('⚠️ Could not decode token for analysis, using anyway');
+              console.log('🔍 Raw token (for debugging):', response.idToken);
               config.headers.Authorization = `Bearer ${response.idToken}`;
               return config;
             }
