@@ -134,6 +134,7 @@ from auth import token_validator
 async def verify_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
     if TEST_MODE:
         # In test mode, return mock user data regardless of credentials
+        logger.info("🧪 Using test mode authentication")
         return {
             "oid": "test-user-id",
             "name": "Test User",
@@ -142,10 +143,22 @@ async def verify_token(credentials: Optional[HTTPAuthorizationCredentials] = Dep
         }
     
     if not credentials:
+        logger.warning("❌ No credentials provided")
         raise HTTPException(status_code=403, detail="Authentication required")
     
     token = credentials.credentials
-    return await token_validator.validate_token(token)
+    logger.info(f"🔑 Validating token (length: {len(token)})")
+    
+    try:
+        user_data = await token_validator.validate_token(token)
+        logger.info(f"✅ Token validation successful for user: {user_data.get('email', 'unknown')}")
+        return user_data
+    except HTTPException as e:
+        logger.error(f"❌ Token validation failed: {e.detail}")
+        raise e
+    except Exception as e:
+        logger.error(f"💥 Unexpected error during token validation: {e}")
+        raise HTTPException(status_code=401, detail="Authentication failed")
 
 # Helper functions
 def generate_short_code():
@@ -196,6 +209,18 @@ async def debug_routes():
             "GET /api/links/{link_id}/analytics",
             "GET /{short_code}"
         ]
+    }
+
+@app.get("/api/debug/auth")
+async def debug_auth(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+    """Debug endpoint to check authentication status"""
+    return {
+        "test_mode": TEST_MODE,
+        "has_credentials": credentials is not None,
+        "azure_tenant_id": AZURE_TENANT_ID is not None,
+        "azure_client_id": os.getenv("AZURE_CLIENT_ID") is not None,
+        "token_length": len(credentials.credentials) if credentials else 0,
+        "token_preview": credentials.credentials[:20] + "..." if credentials else None
     }
 
 @app.get("/api/health")

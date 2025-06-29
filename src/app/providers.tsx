@@ -4,7 +4,8 @@ import { MsalProvider } from '@azure/msal-react';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { msalConfig } from '@/lib/authConfig';
-import { useState } from 'react';
+import { setMsalInstance } from '@/lib/api';
+import { useState, useEffect } from 'react';
 
 const msalInstance = new PublicClientApplication(msalConfig);
 
@@ -17,6 +18,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
       },
     },
   }));
+
+  useEffect(() => {
+    // Initialize MSAL and set the instance for API calls
+    msalInstance.initialize().then(() => {
+      setMsalInstance(msalInstance);
+    });
+  }, []);
 
   return (
     <MsalProvider instance={msalInstance}>
