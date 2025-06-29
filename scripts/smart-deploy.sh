@@ -62,7 +62,7 @@ else
 fi
 
 # Check nginx changes
-if has_changes "nginx-docker.conf" || has_changes "Dockerfile.nginx"; then
+if has_changes "docker/nginx-docker.conf" || has_changes "docker/Dockerfile.nginx"; then
     REBUILD_NGINX=true
     print_info "🔄 Nginx changes detected"
 else
@@ -74,7 +74,7 @@ if [ "$REBUILD_BACKEND" = false ] && [ "$REBUILD_FRONTEND" = false ] && [ "$REBU
     print_success "🎉 No changes detected!"
     
     # Check if containers are running
-    if docker-compose -f docker/docker/docker-compose.fullstack.yml ps | grep -q "Up"; then
+    if docker-compose -f docker/docker-compose.fullstack.yml ps | grep -q "Up"; then
         print_success "✅ Containers are already running"
         print_info "🧪 Running health check..."
         

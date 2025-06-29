@@ -32,18 +32,18 @@ jobs:
           
           # Check if containers are running
           echo "📊 Container status:"
-          ./manage-fullstack.sh status
+          ./scripts/manage-fullstack.sh status
           
           # Test health endpoint (try both HTTP and HTTPS)
           echo "🌐 Testing health endpoint..."
           if curl -f -s http://localhost:8080/api/health > /dev/null 2>&1; then
             echo "✅ Health endpoint working (HTTP)"
-          elif curl -f -s -k https://links.miskakyto.fi/health > /dev/null 2>&1; then
+          elif curl -f -s -k https://links.miskakyto.fi/api/health > /dev/null 2>&1; then
             echo "✅ Health endpoint working (HTTPS)"
           else
             echo "❌ Health endpoint failed on both HTTP and HTTPS"
             echo "📋 Container logs:"
-            ./manage-fullstack.sh logs --tail=50
+            ./scripts/manage-fullstack.sh logs --tail=50
             exit 1
           fi
           
@@ -55,9 +55,9 @@ jobs:
             echo "✅ Frontend responding (HTTPS)"
           else
             echo "❌ Frontend not responding on either protocol"
-            ./manage-fullstack.sh logs frontend --tail=20
+            ./scripts/manage-fullstack.sh logs frontend --tail=20
             exit 1
-          }
+          fi
           
           # Check disk space
           echo "💾 Disk usage:"

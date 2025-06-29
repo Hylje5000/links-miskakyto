@@ -44,7 +44,7 @@ jobs:
           
           # Stop services
           echo "🛑 Stopping services..."
-          ./manage-fullstack.sh stop || true
+          ./scripts/manage-fullstack.sh stop || true
           
           # Create backup of current state
           BACKUP_BRANCH="backup-$(date +%Y%m%d-%H%M%S)"
@@ -58,23 +58,23 @@ jobs:
           
           # Rebuild and restart
           echo "🏗️ Rebuilding containers..."
-          ./manage-fullstack.sh build
+          ./scripts/manage-fullstack.sh build
           
           echo "🚀 Starting services..."
-          ./manage-fullstack.sh start
+          ./scripts/manage-fullstack.sh start
           
           # Wait for services to start
           sleep 15
           
           # Health check
           echo "🏥 Running health checks..."
-          ./manage-fullstack.sh status
+          ./scripts/manage-fullstack.sh status
           
           # Test endpoints
           echo "🧪 Testing endpoints..."
           curl -f http://localhost:8080/api/health || {
             echo "❌ Rollback health check failed"
-            ./manage-fullstack.sh logs
+            ./scripts/manage-fullstack.sh logs
             exit 1
           }
           

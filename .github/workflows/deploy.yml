@@ -5,9 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-    types:          echo "🚀 Running smart deployment (only rebuilds changed components)..."
-          chmod +x ./scripts/smart-deploy.sh
-          ./scripts/smart-deploy.shclosed ]
+    types: [ closed ]
 
 env:
   VM_HOST: 4.210.156.244
@@ -73,8 +71,8 @@ jobs:
           
           # Stop services if running
           echo "🛑 Stopping services..."
-          if [ -f manage-fullstack.sh ]; then
-            chmod +x manage-fullstack.sh
+          if [ -f scripts/manage-fullstack.sh ]; then
+            chmod +x scripts/manage-fullstack.sh
             ./scripts/manage-fullstack.sh stop || true
           fi
           
@@ -91,7 +89,7 @@ jobs:
           git reset --hard origin/main
           
           # Make scripts executable
-          chmod +x script./scripts/manage-fullstack.sh
+          chmod +x scripts/manage-fullstack.sh
           chmod +x scripts/smart-deploy.sh
           
           # Set up environment (preserve existing .env)
@@ -104,23 +102,9 @@ jobs:
             echo "✅ Found existing .env file, keeping current configuration"
           fi
           
-          # Force rebuild containers to pick up code changes
-          echo "🏗️ Stopping existing containers..."
-          ./script./scripts/manage-fullstack.sh stop
-          
-          echo "🗑️ Removing old images to force rebuild..."
-          docker-compose -f docker/docker-compose.fullstack.yml down --rmi local || true
-          
-          echo "� Running smart deployment (only rebuilds changed components)..."
-          chmod +x ./smart-deploy.sh
-          ./smart-deploy.sh
-            echo "📊 Container status:"
-            ./scripts/manage-fullstack.sh status
-            echo "📝 Recent logs:"
-            ./scripts/manage-fullstack.sh logs --tail=50
-            # Don't fail deployment if health check fails but containers are running
-            echo "⚠️ Continuing deployment despite health check failure"
-          fi
+          # Run smart deployment
+          echo "🚀 Running smart deployment (only rebuilds changed components)..."
+          ./scripts/smart-deploy.sh
           
           echo "✅ Deployment completed successfully!"
 
