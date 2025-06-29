@@ -36,15 +36,16 @@ ALLOWED_ORIGINS=https://links.miskakyto.fi
 
 ### 3. Test Token Validation
 
-Get an access token from your browser and test it:
+Get an ID token from your browser and test it:
 
-1. Open browser DevTools > Application > Local Storage
-2. Find the `accessToken` key and copy its value
-3. Test with the backend:
+1. Open browser DevTools > Console
+2. Run: `localStorage.clear()` then refresh and sign in
+3. Check the network requests in DevTools to see the Authorization header with the ID token
+4. Test with the backend:
 
 ```bash
 curl -X POST https://links.miskakyto.fi/api/links \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN_HERE" \
+  -H "Authorization: Bearer YOUR_ID_TOKEN_HERE" \
   -H "Content-Type: application/json" \
   -d '{"original_url": "https://example.com", "description": "test"}'
 ```

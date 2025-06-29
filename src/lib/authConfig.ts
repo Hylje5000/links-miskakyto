@@ -16,9 +16,10 @@ export const loginRequest = {
   scopes: ['openid', 'profile', 'email'],
 };
 
-export const apiRequest = {
-  scopes: [`${process.env.NEXT_PUBLIC_AZURE_CLIENT_ID}/.default`],
-};
+// Remove the apiRequest - we'll use ID tokens instead
+// export const apiRequest = {
+//   scopes: [`${process.env.NEXT_PUBLIC_AZURE_CLIENT_ID}/.default`],
+// };
 
 // Test mode helpers
 export const getTestModeUser = () => isTestMode ? testModeConfig.mockUser : null;

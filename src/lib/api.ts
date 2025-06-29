@@ -29,34 +29,36 @@ api.interceptors.request.use(async (config) => {
       console.log('📧 Available accounts:', accounts.length);
       
       if (accounts.length > 0) {
-        // PRIORITY 1: Try to get an access token for the custom API
         try {
-          const apiRequest = {
-            scopes: [`${process.env.NEXT_PUBLIC_AZURE_CLIENT_ID}/.default`],
+          // Use ID token for authentication - much simpler!
+          const response = await msalInstance.acquireTokenSilent({
+            scopes: ['openid', 'profile', 'email'],
             account: accounts[0],
-          };
-          const apiResponse = await msalInstance.acquireTokenSilent(apiRequest);
-          if (apiResponse.accessToken) {
-            config.headers.Authorization = `Bearer ${apiResponse.accessToken}`;
-            console.log('🔑 Using access token for custom API authentication');
-            console.log('🎯 Token audience should be:', process.env.NEXT_PUBLIC_AZURE_CLIENT_ID);
-            return config;
-          }
-        } catch (accessTokenError: any) {
-          console.warn('❌ Custom API access token acquisition failed:', accessTokenError);
+          });
           
-          // If the error is about consent or permissions, try interactive token acquisition
-          if (accessTokenError.errorCode === 'consent_required' || 
-              accessTokenError.errorCode === 'interaction_required') {
+          if (response.idToken) {
+            config.headers.Authorization = `Bearer ${response.idToken}`;
+            console.log('🔑 Using ID token for authentication');
+            console.log('👤 User:', response.account?.name);
+            return config;
+          } else {
+            console.error('❌ No ID token received');
+          }
+        } catch (tokenError: any) {
+          console.error('❌ Token acquisition failed:', tokenError);
+          
+          // Try interactive token acquisition if silent fails
+          if (tokenError.errorCode === 'consent_required' || 
+              tokenError.errorCode === 'interaction_required') {
             console.log('🔐 Attempting interactive token acquisition...');
             try {
               const interactiveResponse = await msalInstance.acquireTokenPopup({
-                scopes: [`${process.env.NEXT_PUBLIC_AZURE_CLIENT_ID}/.default`],
+                scopes: ['openid', 'profile', 'email'],
                 account: accounts[0],
               });
-              if (interactiveResponse.accessToken) {
-                config.headers.Authorization = `Bearer ${interactiveResponse.accessToken}`;
-                console.log('🔑 Using interactively acquired access token');
+              if (interactiveResponse.idToken) {
+                config.headers.Authorization = `Bearer ${interactiveResponse.idToken}`;
+                console.log('🔑 Using interactively acquired ID token');
                 return config;
               }
             } catch (interactiveError) {
@@ -65,24 +67,7 @@ api.interceptors.request.use(async (config) => {
           }
         }
 
-        // FALLBACK: Try to get an ID token (for backwards compatibility)
-        try {
-          const basicRequest = {
-            scopes: ['openid', 'profile', 'email'],
-            account: accounts[0],
-          };
-          const basicResponse = await msalInstance.acquireTokenSilent(basicRequest);
-          if (basicResponse.idToken) {
-            config.headers.Authorization = `Bearer ${basicResponse.idToken}`;
-            console.log('⚠️ Using ID token as fallback (may not work with API)');
-            console.log('💡 Consider ensuring your Azure AD app registration exposes an API');
-            return config;
-          }
-        } catch (idTokenError) {
-          console.warn('ID token acquisition also failed:', idTokenError);
-        }
-
-        console.error('❌ Failed to acquire any usable token');
+        console.error('❌ Failed to acquire ID token');
       } else {
         console.warn('⚠️ No accounts found, user might need to sign in');
       }

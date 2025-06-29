@@ -31,40 +31,28 @@ This guide walks you through setting up Azure AD app registration for the Link S
    - Any other domains where your app will be hosted
 4. Click "Save"
 
-### 3. Expose an API (CRITICAL STEP)
+### 3. Configure Token Settings (Simplified Approach)
 
-This is the most important step to fix the 401 errors:
+Since we're using ID tokens for authentication (a simpler, best-practice approach), you don't need to expose a custom API. The app will use standard OpenID Connect scopes.
 
-1. **Go to your app registration > "Expose an API"**
-2. **Set the Application ID URI** (if not already set):
-   - Look for "Application ID URI" at the top
-   - If it shows "Add" or is empty, click "Set"
-   - Accept the default: `api://your-client-id` (e.g., `api://81f7c571-588d-4a13-be31-3cc8da4bf4fe`)
-   - Click "Save"
-   
-   ⚠️ **IMPORTANT**: If you don't see an Application ID URI, your API isn't exposed yet!
+1. Go to your app registration > Token configuration
+2. Click "Add optional claim"
+3. Select "ID" token type
+4. Add these claims if not already present:
+   - ✅ **email** - user's email address  
+   - ✅ **name** - user's display name
+   - ✅ **upn** - user principal name
+5. Click "Add"
 
-3. **Add a scope**:
-   - Click "Add a scope" (this button only appears after step 2 is complete)
-   - Fill in the scope details:
-     - **Scope name**: `LinkShortener.ReadWrite`
-     - **Who can consent**: Admins and users
-     - **Admin consent display name**: `Access Link Shortener API`
-     - **Admin consent description**: `Allows the app to create and manage shortened links`
-     - **User consent display name**: `Access your shortened links`
-     - **User consent description**: `Allow this app to create and manage your shortened links`
-     - **State**: Enabled
-   - Click "Add scope"
+**Why ID tokens instead of access tokens?**
+- ID tokens contain user identity information and are perfect for authentication
+- They're simpler to validate and don't require custom API scopes
+- This follows Azure AD best practices for single-page applications
+- No need to expose custom APIs or manage complex permission flows
 
-4. **Verify the setup**:
-   - You should now see your Application ID URI at the top
-   - Below it, you should see your scope: `api://your-client-id/LinkShortener.ReadWrite`
-   
-   If you don't see these, repeat steps 2-3.
+### 4. Configure API Permissions (Minimal Setup)
 
-### 4. Configure API Permissions
-
-**IMPORTANT**: Since you're using a single app registration for both frontend and backend, you **don't need to add permissions to itself**. An application automatically has access to its own exposed scopes.
+With ID tokens, you only need basic Microsoft Graph permissions:
 
 1. Go to your app registration > "API permissions"
 2. You should see:

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { linkAPI } from '@/lib/api';
@@ -19,25 +19,8 @@ export function LinkDashboard() {
   const { accounts } = useMsal();
   const queryClient = useQueryClient();
 
-  // Get access token and store it
+  // No need to manually store tokens - the API interceptor handles ID token acquisition
   const { instance } = useMsal();
-  
-  useEffect(() => {
-    if (isTestMode) {
-      // In test mode, set a mock token
-      localStorage.setItem('accessToken', 'test-token');
-    } else if (accounts.length > 0) {
-      instance.acquireTokenSilent({
-        scopes: ['openid', 'profile', 'email'],
-        account: accounts[0],
-      }).then((response) => {
-        localStorage.setItem('accessToken', response.accessToken);
-      }).catch(() => {
-        // Handle token acquisition error
-        console.error('Failed to acquire token');
-      });
-    }
-  }, [accounts, instance]);
 
   const { data: links = [], isLoading } = useQuery({
     queryKey: ['links'],
