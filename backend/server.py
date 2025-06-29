@@ -5,7 +5,6 @@ Run this script to start the FastAPI development server.
 """
 
 import uvicorn
-from main import app
 
 if __name__ == "__main__":
     uvicorn.run(

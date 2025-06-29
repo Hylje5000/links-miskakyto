@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
 
+@pytest.mark.asyncio
 class TestAPI:
     """Test the main API endpoints."""
 
@@ -211,7 +212,7 @@ class TestAPI:
         assert response.status_code == 200
         data = response.json()
         assert data["link_id"] == created_link["id"]
-        assert data["click_count"] == 0
+        assert data["total_clicks"] == 0
         assert isinstance(data["recent_clicks"], list)
 
     async def test_redirect_link(self, async_client: AsyncClient, auth_headers: dict, test_db: str):

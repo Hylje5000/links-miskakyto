@@ -149,7 +149,7 @@ class TestAnalytics:
         
         assert analytics_response.status_code == 200
         analytics = analytics_response.json()
-        assert analytics["click_count"] == 0
+        assert analytics["total_clicks"] == 0
         assert len(analytics["recent_clicks"]) == 0
 
 class TestConcurrency:
