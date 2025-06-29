@@ -13,7 +13,7 @@ export const msalConfig = isTestMode ? msalTestConfig : {
 };
 
 export const loginRequest = {
-  scopes: ['openid', 'profile', 'email'],
+  scopes: ['openid'], // Only request openid scope to ensure we get ID token
 };
 
 // Remove the apiRequest - we'll use ID tokens instead

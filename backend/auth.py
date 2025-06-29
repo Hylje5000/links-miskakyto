@@ -91,11 +91,26 @@ def validate_id_token(token: str) -> Dict[str, Any]:
         ValueError: If required claims are missing
     """
     try:
+        # First, let's decode without verification to see what we're dealing with
+        unverified_payload = jwt.decode(token, options={"verify_signature": False})
+        unverified_header = jwt.get_unverified_header(token)
+        
+        logger.info(f"🔍 Token analysis:")
+        logger.info(f"  - Header: {unverified_header}")
+        logger.info(f"  - Audience: {unverified_payload.get('aud')}")
+        logger.info(f"  - Expected audience: {CLIENT_ID}")
+        logger.info(f"  - Issuer: {unverified_payload.get('iss')}")
+        logger.info(f"  - Token type: {unverified_payload.get('idtyp', 'not set')}")
+        logger.info(f"  - Token use: {unverified_payload.get('token_use', 'not set')}")
+        
+        # Check if this is an access token instead of ID token
+        if unverified_payload.get('aud') == "00000003-0000-0000-c000-000000000000":
+            raise jwt.InvalidTokenError("Received Microsoft Graph access token instead of ID token. Frontend should send ID token.")
+        
         # Get the signing keys
         jwks_data = get_jwks_keys()
         
         # Decode the token header to get the key ID
-        unverified_header = jwt.get_unverified_header(token)
         kid = unverified_header.get('kid')
         
         if not kid:

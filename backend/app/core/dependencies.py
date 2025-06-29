@@ -46,12 +46,31 @@ async def verify_token(
         user_data = token_validator.validate_token(token)
         logger.info(f"✅ Token validation successful for user: {user_data.get('email', 'unknown')}")
         return user_data
-    except HTTPException as e:
-        logger.error(f"❌ Token validation failed: {e.detail}")
-        raise e
     except Exception as e:
-        logger.error(f"💥 Unexpected error during token validation: {e}")
-        raise HTTPException(status_code=401, detail="Authentication failed")
+        error_msg = str(e)
+        logger.error(f"❌ Token validation failed: {error_msg}")
+        
+        # Provide helpful error messages
+        if "Microsoft Graph access token" in error_msg:
+            raise HTTPException(
+                status_code=401, 
+                detail="Invalid token type: Frontend is sending access token instead of ID token. Please use ID token for authentication."
+            )
+        elif "invalid audience" in error_msg.lower():
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid token audience: Token is not intended for this application."
+            )
+        elif "expired" in error_msg.lower():
+            raise HTTPException(
+                status_code=401,
+                detail="Token has expired. Please log in again."
+            )
+        else:
+            raise HTTPException(
+                status_code=401,
+                detail=f"Authentication failed: {error_msg}"
+            )
 
 
 def get_current_user() -> Dict[str, Any]:

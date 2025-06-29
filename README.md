@@ -34,20 +34,34 @@ A modern, secure URL shortener application with Microsoft Entra ID authenticatio
 - **State Management**: @tanstack/react-query
 - **Icons**: Lucide React
 
-### Backend (FastAPI)
+### Backend (FastAPI) - Clean Architecture
 ```
 📁 backend/
-├── main.py       # FastAPI application
-├── models.py     # Database models
-├── auth.py       # Authentication logic
-└── database.py   # Database configuration
+├── main.py                 # FastAPI app orchestration
+├── auth.py                 # Authentication utilities
+├── app/
+│   ├── core/              # Core application components
+│   │   ├── config.py      # Configuration management
+│   │   ├── database.py    # Database operations
+│   │   └── dependencies.py # FastAPI dependencies
+│   ├── models/            # Data models
+│   │   └── schemas.py     # Pydantic models
+│   ├── services/          # Business logic layer
+│   │   └── link_service.py # Link management logic
+│   └── api/               # API route handlers
+│       ├── links.py       # Link CRUD endpoints
+│       ├── system.py      # Health & debug endpoints
+│       └── redirect.py    # Redirect handling
+└── tests/                 # Comprehensive test suite
 ```
 
 **Tech Stack:**
-- **Framework**: FastAPI with async/await
-- **Database**: SQLite with SQLAlchemy ORM
-- **Authentication**: JWT token validation
+- **Framework**: FastAPI with async/await and clean architecture
+- **Database**: SQLite with aiosqlite for async operations
+- **Authentication**: JWT token validation with Microsoft Entra ID
+- **Testing**: pytest with comprehensive fixtures
 - **API Docs**: Automatic OpenAPI/Swagger generation
+- **Architecture**: Clean separation of concerns with dependency injection
 
 ### Infrastructure
 ```

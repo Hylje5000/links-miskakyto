@@ -30,30 +30,75 @@ api.interceptors.request.use(async (config) => {
       
       if (accounts.length > 0) {
         try {
-          // Use ID token for authentication - much simpler!
+          // Get the account
+          const account = accounts[0];
+          
+          // Method 1: Try to get ID token directly from MSAL cache
+          const clientId = process.env.NEXT_PUBLIC_AZURE_CLIENT_ID;
+          const tenantId = process.env.NEXT_PUBLIC_AZURE_TENANT_ID;
+          
+          // Look for ID token in localStorage with the correct key pattern
+          const idTokenKey = Object.keys(localStorage).find(key => 
+            key.includes('idtoken') && 
+            key.includes(clientId!) &&
+            key.includes(account.homeAccountId)
+          );
+          
+          if (idTokenKey) {
+            const idTokenData = JSON.parse(localStorage.getItem(idTokenKey) || '{}');
+            if (idTokenData.data) {
+              // The token is stored encrypted, so we need to get it via MSAL
+              // Let's try a different approach
+            }
+          }
+          
+          // Method 2: Use acquireTokenSilent with minimal configuration
           const response = await msalInstance.acquireTokenSilent({
-            scopes: ['openid', 'profile', 'email'],
-            account: accounts[0],
+            scopes: ['openid'], // Only request openid scope for ID token
+            account: account,
+            forceRefresh: false
           });
           
+          // Check both idToken and accessToken to see which one we're getting
+          console.log('🔍 Response analysis:');
+          console.log('  - Has idToken:', !!response.idToken);
+          console.log('  - Has accessToken:', !!response.accessToken);
+          
           if (response.idToken) {
-            config.headers.Authorization = `Bearer ${response.idToken}`;
-            console.log('🔑 Using ID token for authentication');
-            console.log('👤 User:', response.account?.name);
-            return config;
+            // Decode the token to verify it's the right type (without validation)
+            try {
+              const tokenPayload = JSON.parse(atob(response.idToken.split('.')[1]));
+              console.log('🔍 Token payload check:');
+              console.log('  - Audience:', tokenPayload.aud);
+              console.log('  - Expected audience:', clientId);
+              console.log('  - Token type:', tokenPayload.idtyp || 'not set');
+              
+              // Use the ID token regardless - let the backend validate it
+              config.headers.Authorization = `Bearer ${response.idToken}`;
+              console.log('🔑 Using ID token for authentication');
+              console.log('👤 User:', response.account?.name);
+              return config;
+            } catch (decodeError) {
+              console.warn('⚠️ Could not decode token for analysis, using anyway');
+              config.headers.Authorization = `Bearer ${response.idToken}`;
+              return config;
+            }
           } else {
-            console.error('❌ No ID token received');
+            console.error('❌ No ID token received in response');
           }
         } catch (tokenError: any) {
           console.error('❌ Token acquisition failed:', tokenError);
+          console.error('  - Error code:', tokenError.errorCode);
+          console.error('  - Error message:', tokenError.errorMessage);
           
+          // Try interactive token acquisition if silent fails
           // Try interactive token acquisition if silent fails
           if (tokenError.errorCode === 'consent_required' || 
               tokenError.errorCode === 'interaction_required') {
             console.log('🔐 Attempting interactive token acquisition...');
             try {
               const interactiveResponse = await msalInstance.acquireTokenPopup({
-                scopes: ['openid', 'profile', 'email'],
+                scopes: ['openid'], // Only openid scope for ID token
                 account: accounts[0],
               });
               if (interactiveResponse.idToken) {
