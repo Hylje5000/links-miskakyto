@@ -2,7 +2,7 @@
 FROM nginx:alpine
 
 # Copy custom nginx configuration
-COPY nginx-docker.conf /etc/nginx/nginx.conf
+COPY docker/nginx-docker.conf /etc/nginx/nginx.conf
 
 # Create directories for frontend assets
 RUN mkdir -p /var/www/html
