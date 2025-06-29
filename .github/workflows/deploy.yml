@@ -108,36 +108,9 @@ jobs:
           echo "🗑️ Removing old images to force rebuild..."
           docker-compose -f docker-compose.fullstack.yml down --rmi local || true
           
-          echo "🔨 Building containers from scratch (no cache)..."
-          export BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          export VCS_REF=${{ github.sha }}
-          export CACHEBUST=${{ github.run_number }}
-          docker-compose -f docker-compose.fullstack.yml build --no-cache
-          
-          echo "🚀 Starting services with fresh containers..."
-          ./manage-fullstack.sh start
-          
-          # Wait for services to start
-          sleep 20
-          
-          # Health check with both HTTP and HTTPS attempts
-          echo "🏥 Running health checks..."
-          
-          # First check if containers are running
-          if ! ./manage-fullstack.sh status | grep -q "Up"; then
-            echo "❌ Containers are not running properly"
-            ./manage-fullstack.sh logs
-            exit 1
-          fi
-          
-          # Try health check (attempt both HTTP and HTTPS)
-          echo "🔍 Checking application health..."
-          if curl -f -s http://localhost:8080/api/health > /dev/null 2>&1; then
-            echo "✅ Application health check passed (HTTP)"
-          elif curl -f -s -k https://links.miskakyto.fi/health > /dev/null 2>&1; then
-            echo "✅ Application health check passed (HTTPS)"
-          else
-            echo "⚠️ Direct health check failed, but services are running"
+          echo "� Running smart deployment (only rebuilds changed components)..."
+          chmod +x ./smart-deploy.sh
+          ./smart-deploy.sh
             echo "📊 Container status:"
             ./manage-fullstack.sh status
             echo "📝 Recent logs:"

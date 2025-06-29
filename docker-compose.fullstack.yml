@@ -7,7 +7,9 @@ services:
       args:
         - BUILDKIT_INLINE_CACHE=1
         - BUILD_DATE=${BUILD_DATE:-unknown}
-        - VCS_REF=${GITHUB_SHA:-unknown}
+        - VCS_REF=${VCS_REF:-unknown}
+      cache_from:
+        - linkshortener-linkshortener-frontend:latest
     environment:
       - NEXT_PUBLIC_API_URL=https://links.miskakyto.fi
       - NEXT_PUBLIC_AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
@@ -27,7 +29,9 @@ services:
       args:
         - BUILDKIT_INLINE_CACHE=1
         - BUILD_DATE=${BUILD_DATE:-unknown}
-        - VCS_REF=${GITHUB_SHA:-unknown}
+        - VCS_REF=${VCS_REF:-unknown}
+      cache_from:
+        - linkshortener-linkshortener-backend:latest
     environment:
       - PRODUCTION=true
       - BASE_URL=https://links.miskakyto.fi
@@ -52,6 +56,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.nginx
+      args:
+        - BUILD_DATE=${BUILD_DATE:-unknown}
+        - VCS_REF=${VCS_REF:-unknown}
+      cache_from:
+        - linkshortener-linkshortener-nginx:latest
     ports:
       - "8080:80"  # Use port 8080 to avoid conflicts with your existing nginx
     volumes:

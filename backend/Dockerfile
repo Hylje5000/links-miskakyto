@@ -1,14 +1,16 @@
-# Use Python 3.12 slim image
-FROM python:3.12-slim
+# Multi-stage build for better caching
+FROM python:3.12-slim as base
 
-# Set working directory
-WORKDIR /app
-
-# Install system dependencies
+# Install system dependencies once
 RUN apt-get update && apt-get install -y \
     gcc \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Dependencies stage
+FROM base as dependencies
+WORKDIR /app
 
 # Copy requirements first for better caching
 COPY requirements.txt .
@@ -16,7 +18,11 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Runtime stage
+FROM dependencies as runtime
+WORKDIR /app
+
+# Copy application code (this layer changes most often)
 COPY . .
 
 # Create directory for database
