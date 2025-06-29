@@ -27,42 +27,112 @@ def get_db_path() -> str:
 
 
 async def init_db() -> None:
-    """Initialize the database with required tables."""
-    async with aiosqlite.connect(get_db_path()) as db:
-        # Create links table
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS links (
-                id TEXT PRIMARY KEY,
-                original_url TEXT NOT NULL,
-                short_code TEXT UNIQUE NOT NULL,
-                description TEXT,
-                click_count INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                created_by TEXT NOT NULL,
-                created_by_name TEXT NOT NULL,
-                tenant_id TEXT NOT NULL
-            )
-        """)
+    """Initialize the database with required tables and handle schema migrations."""
+    db_path = get_db_path()
+    
+    async with aiosqlite.connect(db_path) as db:
+        # Check if we need to recreate the tables due to schema changes
+        needs_recreation = await _check_schema_compatibility(db)
         
-        # Create clicks table for analytics
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS clicks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                link_id TEXT NOT NULL,
-                clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                ip_address TEXT,
-                user_agent TEXT,
-                FOREIGN KEY (link_id) REFERENCES links (id)
-            )
-        """)
+        if needs_recreation:
+            print("🔄 Detected schema incompatibility. Recreating database tables...")
+            await _recreate_tables(db)
+        else:
+            await _create_tables_if_not_exist(db)
         
         # Create indices for better performance
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_links_short_code ON links(short_code)")
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_links_tenant_id ON links(tenant_id)")
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_clicks_link_id ON clicks(link_id)")
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_clicks_clicked_at ON clicks(clicked_at)")
+        await _create_indices(db)
         
         await db.commit()
+        print("✅ Database initialization complete")
+
+
+async def _check_schema_compatibility(db: aiosqlite.Connection) -> bool:
+    """Check if the current schema is compatible with the expected schema."""
+    try:
+        # Check if links table exists
+        cursor = await db.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='links'
+        """)
+        links_table = await cursor.fetchone()
+        
+        if not links_table:
+            # Table doesn't exist, no recreation needed
+            return False
+        
+        # Check if the table has all required columns
+        cursor = await db.execute("PRAGMA table_info(links)")
+        columns = await cursor.fetchall()
+        column_names = [col[1] for col in columns]
+        
+        required_columns = [
+            'id', 'original_url', 'short_code', 'description', 
+            'click_count', 'created_at', 'created_by', 
+            'created_by_name', 'tenant_id'
+        ]
+        
+        missing_columns = [col for col in required_columns if col not in column_names]
+        
+        if missing_columns:
+            print(f"⚠️  Missing columns in links table: {missing_columns}")
+            return True
+        
+        return False
+        
+    except Exception as e:
+        print(f"⚠️  Error checking schema compatibility: {e}")
+        return True
+
+
+async def _recreate_tables(db: aiosqlite.Connection) -> None:
+    """Recreate all tables with the correct schema."""
+    print("🗑️  Dropping existing tables...")
+    
+    # Drop existing tables
+    await db.execute("DROP TABLE IF EXISTS clicks")
+    await db.execute("DROP TABLE IF EXISTS links")
+    
+    print("🔨 Creating new tables with correct schema...")
+    await _create_tables_if_not_exist(db)
+
+
+async def _create_tables_if_not_exist(db: aiosqlite.Connection) -> None:
+    """Create tables if they don't exist."""
+    # Create links table with all required columns
+    await db.execute("""
+        CREATE TABLE IF NOT EXISTS links (
+            id TEXT PRIMARY KEY,
+            original_url TEXT NOT NULL,
+            short_code TEXT UNIQUE NOT NULL,
+            description TEXT,
+            click_count INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_by TEXT NOT NULL,
+            created_by_name TEXT NOT NULL,
+            tenant_id TEXT NOT NULL
+        )
+    """)
+    
+    # Create clicks table for analytics
+    await db.execute("""
+        CREATE TABLE IF NOT EXISTS clicks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            link_id TEXT NOT NULL,
+            clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            ip_address TEXT,
+            user_agent TEXT,
+            FOREIGN KEY (link_id) REFERENCES links (id)
+        )
+    """)
+
+
+async def _create_indices(db: aiosqlite.Connection) -> None:
+    """Create performance indices."""
+    await db.execute("CREATE INDEX IF NOT EXISTS idx_links_short_code ON links(short_code)")
+    await db.execute("CREATE INDEX IF NOT EXISTS idx_links_tenant_id ON links(tenant_id)")
+    await db.execute("CREATE INDEX IF NOT EXISTS idx_clicks_link_id ON clicks(link_id)")
+    await db.execute("CREATE INDEX IF NOT EXISTS idx_clicks_clicked_at ON clicks(clicked_at)")
 
 
 class DatabaseManager:
