@@ -61,6 +61,7 @@ class LinkResponse(BaseModel):
     click_count: int
     created_at: str
     created_by: str
+    created_by_name: Optional[str]
     tenant_id: str
 
 class LinkUpdate(BaseModel):
@@ -98,6 +99,7 @@ async def init_db():
                 click_count INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 created_by TEXT NOT NULL,
+                created_by_name TEXT,
                 tenant_id TEXT NOT NULL
             )
         """)
@@ -150,7 +152,7 @@ async def verify_token(credentials: Optional[HTTPAuthorizationCredentials] = Dep
     logger.info(f"🔑 Validating token (length: {len(token)})")
     
     try:
-        user_data = await token_validator.validate_token(token)
+        user_data = token_validator.validate_token(token)
         logger.info(f"✅ Token validation successful for user: {user_data.get('email', 'unknown')}")
         return user_data
     except HTTPException as e:
@@ -273,14 +275,15 @@ async def create_link(
     
     async with aiosqlite.connect(get_db_path()) as db:
         await db.execute("""
-            INSERT INTO links (id, original_url, short_code, description, created_by, tenant_id)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO links (id, original_url, short_code, description, created_by, created_by_name, tenant_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
             link_id,
             link_data.original_url,
             short_code,
             link_data.description,
             user["oid"],
+            user.get("name", "Unknown User"),
             user["tid"]
         ))
         await db.commit()
@@ -294,6 +297,7 @@ async def create_link(
         click_count=0,
         created_at=created_at,
         created_by=user["oid"],
+        created_by_name=user.get("name", "Unknown User"),
         tenant_id=user["tid"]
     )
 
@@ -321,6 +325,7 @@ async def get_links(
                 click_count=link["click_count"],
                 created_at=link["created_at"],
                 created_by=link["created_by"],
+                created_by_name=link["created_by_name"],
                 tenant_id=link["tenant_id"]
             )
             for link in links
@@ -352,6 +357,7 @@ async def get_link(
             click_count=link["click_count"],
             created_at=link["created_at"],
             created_by=link["created_by"],
+            created_by_name=link["created_by_name"],
             tenant_id=link["tenant_id"]
         )
 
@@ -400,6 +406,7 @@ async def update_link(
             click_count=updated_link["click_count"],
             created_at=updated_link["created_at"],
             created_by=updated_link["created_by"],
+            created_by_name=updated_link["created_by_name"],
             tenant_id=updated_link["tenant_id"]
         )
 
@@ -487,6 +494,52 @@ async def redirect_to_original(short_code: str, request: Request):
     await increment_click_count(link["id"], client_ip, user_agent)
     
     return RedirectResponse(url=link["original_url"], status_code=302)
+
+@app.post("/api/debug/token")
+async def debug_token_validation(token_data: dict):
+    """Debug endpoint to test token validation with detailed logging"""
+    if not token_data.get("token"):
+        return {"error": "No token provided", "usage": "POST with JSON: {\"token\": \"your_token_here\"}"}
+    
+    token = token_data["token"]
+    
+    try:
+        # Import here to avoid issues
+        from auth import token_validator
+        
+        logger.info(f"🔍 Debug: Validating token (length: {len(token)})")
+        logger.info(f"🔍 Debug: Token starts with: {token[:20]}...")
+        
+        user_data = token_validator.validate_token(token)
+        
+        return {
+            "success": True,
+            "message": "Token validation successful",
+            "user_data": user_data,
+            "token_length": len(token),
+            "token_preview": token[:20] + "..."
+        }
+        
+    except HTTPException as e:
+        logger.error(f"🔍 Debug: HTTPException during validation: {e.detail}")
+        return {
+            "success": False,
+            "error_type": "HTTPException",
+            "error_detail": e.detail,
+            "status_code": e.status_code,
+            "token_length": len(token),
+            "token_preview": token[:20] + "..."
+        }
+        
+    except Exception as e:
+        logger.error(f"🔍 Debug: Unexpected error: {str(e)}")
+        return {
+            "success": False,
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            "token_length": len(token),
+            "token_preview": token[:20] + "..."
+        }
 
 if __name__ == "__main__":
     import uvicorn
