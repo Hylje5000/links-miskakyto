@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  linkshortener-backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"  # Expose backend on port 8000
+    environment:
+      - PRODUCTION=true
+      - BASE_URL=https://links.miskakyto.fi
+      - ALLOWED_ORIGINS=https://links.miskakyto.fi,https://linkshortener-frontend.vercel.app
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - DATABASE_URL=sqlite:///data/links.db
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - linkshortener
+
+networks:
+  linkshortener:
+    driver: bridge

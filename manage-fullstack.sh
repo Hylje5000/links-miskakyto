@@ -5,7 +5,7 @@
 
 set -e
 
-COMPOSE_FILE="docker/docker-compose.fullstack.yml"
+COMPOSE_FILE="docker-compose.fullstack.yml"
 PROJECT_NAME="linkshortener"
 
 # Colors for output
@@ -67,13 +67,6 @@ start_services() {
     # Create data directory if it doesn't exist
     mkdir -p data
     
-    # Load environment variables
-    if [ -f .env ]; then
-        set -a
-        source .env
-        set +a
-    fi
-    
     # Build and start containers (always pull latest and rebuild)
     export BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
     export VCS_REF=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
@@ -122,13 +115,6 @@ rebuild_services() {
     
     # Remove dangling images
     docker image prune -f
-    
-    # Load environment variables
-    if [ -f .env ]; then
-        set -a
-        source .env
-        set +a
-    fi
     
     # Set build variables
     export BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')

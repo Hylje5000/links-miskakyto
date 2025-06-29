@@ -62,7 +62,7 @@ else
 fi
 
 # Check nginx changes
-if has_changes "docker/nginx-docker.conf" || has_changes "docker/Dockerfile.nginx"; then
+if has_changes "nginx-docker.conf" || has_changes "Dockerfile.nginx"; then
     REBUILD_NGINX=true
     print_info "🔄 Nginx changes detected"
 else
@@ -74,7 +74,7 @@ if [ "$REBUILD_BACKEND" = false ] && [ "$REBUILD_FRONTEND" = false ] && [ "$REBU
     print_success "🎉 No changes detected!"
     
     # Check if containers are running
-    if docker-compose -f docker/docker-compose.fullstack.yml ps | grep -q "Up"; then
+    if docker-compose -f docker-compose.fullstack.yml ps | grep -q "Up"; then
         print_success "✅ Containers are already running"
         print_info "🧪 Running health check..."
         
@@ -89,13 +89,7 @@ if [ "$REBUILD_BACKEND" = false ] && [ "$REBUILD_FRONTEND" = false ] && [ "$REBU
         fi
     else
         print_info "🚀 Containers not running, starting existing images..."
-        # Load environment variables
-        if [ -f .env ]; then
-            set -a
-            source .env
-            set +a
-        fi
-        docker-compose -f docker/docker-compose.fullstack.yml up -d
+        docker-compose -f docker-compose.fullstack.yml up -d
         sleep 30
         
         if curl -s http://localhost:8080/api/health > /dev/null; then
@@ -112,7 +106,7 @@ fi
 
 # Stop containers before rebuilding
 print_status "🛑 Stopping containers..."
-docker-compose -f docker/docker-compose.fullstack.yml down
+docker-compose -f docker-compose.fullstack.yml down
 
 # Selective rebuild
 BUILD_ARGS=""
@@ -136,30 +130,14 @@ fi
 export BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 export VCS_REF=$CURRENT_COMMIT
 
-# Load environment variables from .env file if it exists
-if [ -f .env ]; then
-    print_info "📋 Loading environment variables from .env"
-    set -a  # automatically export all variables
-    source .env
-    set +a  # stop automatically exporting
-else
-    print_info "⚠️ No .env file found, using defaults"
-fi
-
 if [ -n "$BUILD_ARGS" ]; then
     print_status "🔨 Building changed services: $BUILD_ARGS"
-    docker-compose -f docker/docker-compose.fullstack.yml build $BUILD_ARGS
+    docker-compose -f docker-compose.fullstack.yml build $BUILD_ARGS
 fi
 
 # Start all containers
 print_status "🚀 Starting containers..."
-# Load environment variables for startup as well
-if [ -f .env ]; then
-    set -a
-    source .env
-    set +a
-fi
-docker-compose -f docker/docker-compose.fullstack.yml up -d
+docker-compose -f docker-compose.fullstack.yml up -d
 
 # Wait for startup
 print_status "⏱️  Waiting for services to start..."

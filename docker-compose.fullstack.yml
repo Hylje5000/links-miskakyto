@@ -2,8 +2,8 @@ services:
   # Frontend - Next.js app
   linkshortener-frontend:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile.frontend
+      context: .
+      dockerfile: Dockerfile.frontend
       args:
         - BUILDKIT_INLINE_CACHE=1
         - BUILD_DATE=${BUILD_DATE:-unknown}
@@ -24,7 +24,7 @@ services:
   # Backend - FastAPI app
   linkshortener-backend:
     build: 
-      context: ../backend
+      context: ./backend
       dockerfile: Dockerfile
       args:
         - BUILDKIT_INLINE_CACHE=1
@@ -40,7 +40,7 @@ services:
       - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
       - DATABASE_URL=sqlite:///data/links.db
     volumes:
-      - ../data:/app/data
+      - ./data:/app/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
@@ -54,8 +54,8 @@ services:
   # Nginx reverse proxy
   linkshortener-nginx:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile.nginx
+      context: .
+      dockerfile: Dockerfile.nginx
       args:
         - BUILD_DATE=${BUILD_DATE:-unknown}
         - VCS_REF=${VCS_REF:-unknown}
@@ -64,7 +64,7 @@ services:
     ports:
       - "8080:80"  # Use port 8080 to avoid conflicts with your existing nginx
     volumes:
-      - ../ssl:/etc/ssl/certs:ro  # Mount SSL certificates if you have them
+      - ./ssl:/etc/ssl/certs:ro  # Mount SSL certificates if you have them
     depends_on:
       - linkshortener-frontend
       - linkshortener-backend
