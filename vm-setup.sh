@@ -124,12 +124,6 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
     }
-
-    # Health check endpoint
-    location /health {
-        proxy_pass http://localhost:8080/api/health;
-        access_log off;
-    }
 }
 EOF
 

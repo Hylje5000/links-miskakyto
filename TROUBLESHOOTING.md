@@ -8,9 +8,8 @@
 
 **Cause:** Backend was missing health check endpoints.
 
-**Solution:** Added health endpoints to backend:
-- `/health` - Main health check endpoint
-- `/api/health` - Alias for compatibility
+**Solution:** Consolidated to single health endpoint:
+- `/api/health` - Primary health check endpoint (removed `/health` for simplicity)
 
 **If still getting 404 after pushing changes, follow these debug steps:**
 
@@ -35,7 +34,6 @@ docker-compose -f docker-compose.fullstack.yml ps
 docker-compose -f docker-compose.fullstack.yml exec linkshortener-backend bash
 
 # Test health endpoint directly inside container
-curl http://localhost:8000/health
 curl http://localhost:8000/api/health
 curl http://localhost:8000/  # Should return {"message": "Link Shortener API", "version": "1.0.0"}
 
@@ -46,7 +44,6 @@ exit
 #### Step 3: Test internal Docker nginx routing
 ```bash
 # Test internal Docker stack (port 8080)
-curl -v http://localhost:8080/health
 curl -v http://localhost:8080/api/health
 
 # Check what's actually responding on port 8080
@@ -73,7 +70,7 @@ docker-compose -f docker-compose.fullstack.yml build --no-cache backend
 
 # Wait 30 seconds, then test again
 sleep 30
-curl http://localhost:8080/health
+curl http://localhost:8080/api/health
 ```
 
 #### Step 6: Check nginx routing configuration
@@ -87,7 +84,6 @@ docker-compose -f docker-compose.fullstack.yml exec linkshortener-nginx cat /etc
 **Test the fix:**
 ```bash
 # Test health endpoints after deployment
-curl https://links.miskakyto.fi/health
 curl https://links.miskakyto.fi/api/health
 ```
 

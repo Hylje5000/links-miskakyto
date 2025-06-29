@@ -132,7 +132,7 @@ case "$1" in
         docker-compose -f docker-compose.fullstack.yml ps
         echo ""
         echo "🌐 Testing services..."
-        curl -s http://localhost:8080/health && echo "✅ Backend is healthy" || echo "❌ Backend is not responding"
+        curl -s http://localhost:8080/api/health && echo "✅ Backend is healthy" || echo "❌ Backend is not responding"
         curl -s -I http://localhost:8080 && echo "✅ Frontend is accessible" || echo "❌ Frontend is not responding"
         ;;
     

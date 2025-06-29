@@ -15,7 +15,7 @@ case "$1" in
         docker-compose ps
         echo ""
         echo "🌐 Testing backend health..."
-        curl -s http://localhost:8000/health && echo "✅ Backend is healthy" || echo "❌ Backend is not responding"
+        curl -s http://localhost:8000/api/health && echo "✅ Backend is healthy" || echo "❌ Backend is not responding"
         ;;
     
     start)
@@ -71,7 +71,7 @@ case "$1" in
     health)
         echo "🏥 Performing health checks..."
         echo "Backend service:"
-        curl -s http://localhost:8000/health | jq . || echo "❌ Backend not responding"
+        curl -s http://localhost:8000/api/health | jq . || echo "❌ Backend not responding"
         echo ""
         echo "Container status:"
         cd $APP_DIR

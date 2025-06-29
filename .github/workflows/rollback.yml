@@ -72,7 +72,7 @@ jobs:
           
           # Test endpoints
           echo "🧪 Testing endpoints..."
-          curl -f http://localhost:8080/health || {
+          curl -f http://localhost:8080/api/health || {
             echo "❌ Rollback health check failed"
             ./manage-fullstack.sh logs
             exit 1

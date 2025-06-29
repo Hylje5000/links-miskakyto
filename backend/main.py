@@ -175,7 +175,7 @@ async def startup_event():
 async def root():
     return {"message": "Link Shortener API", "version": "1.0.0"}
 
-@app.get("/health")
+@app.get("/api/health")
 async def health_check():
     """Health check endpoint for monitoring and deployment"""
     try:
@@ -198,11 +198,6 @@ async def health_check():
             "error": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         })
-
-@app.get("/api/health")
-async def api_health_check():
-    """API health check endpoint (alias for /health)"""
-    return await health_check()
 
 @app.post("/api/links", response_model=LinkResponse)
 async def create_link(

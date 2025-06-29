@@ -9,9 +9,9 @@ echo ""
 
 # Check if backend is running
 echo "1. Backend Service Status:"
-if curl -s http://localhost:8000/health > /dev/null; then
+if curl -s http://localhost:8000/api/health > /dev/null; then
     echo "   ✅ Backend is running on port 8000"
-    curl -s http://localhost:8000/health | head -1
+    curl -s http://localhost:8000/api/health | head -1
 else
     echo "   ❌ Backend is not responding on port 8000"
     echo "   💡 Run: cd /opt/linkshortener && docker-compose up -d"
@@ -48,13 +48,13 @@ echo ""
 
 # Test API endpoints through nginx
 echo "4. API Integration Test:"
-if curl -s -k https://links.miskakyto.fi/health > /dev/null 2>&1; then
+if curl -s -k https://links.miskakyto.fi/api/health > /dev/null 2>&1; then
     echo "   ✅ HTTPS health check works"
-elif curl -s http://links.miskakyto.fi/health > /dev/null 2>&1; then
+elif curl -s http://links.miskakyto.fi/api/health > /dev/null 2>&1; then
     echo "   ⚠️  HTTP health check works (HTTPS might need setup)"
 else
     echo "   ❌ Health check failed through nginx"
-    echo "   💡 Check nginx configuration for /health location"
+    echo "   💡 Check nginx configuration for /api/health location"
 fi
 echo ""
 
