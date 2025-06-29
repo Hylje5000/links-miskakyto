@@ -32,14 +32,14 @@ api.interceptors.request.use(async (config) => {
         // PRIORITY 1: Try to get an access token for the custom API
         try {
           const apiRequest = {
-            scopes: [`api://${process.env.NEXT_PUBLIC_AZURE_CLIENT_ID}/.default`],
+            scopes: [`${process.env.NEXT_PUBLIC_AZURE_CLIENT_ID}/.default`],
             account: accounts[0],
           };
           const apiResponse = await msalInstance.acquireTokenSilent(apiRequest);
           if (apiResponse.accessToken) {
             config.headers.Authorization = `Bearer ${apiResponse.accessToken}`;
             console.log('🔑 Using access token for custom API authentication');
-            console.log('🎯 Token audience should be:', `api://${process.env.NEXT_PUBLIC_AZURE_CLIENT_ID}`);
+            console.log('🎯 Token audience should be:', process.env.NEXT_PUBLIC_AZURE_CLIENT_ID);
             return config;
           }
         } catch (accessTokenError: any) {
@@ -51,7 +51,7 @@ api.interceptors.request.use(async (config) => {
             console.log('🔐 Attempting interactive token acquisition...');
             try {
               const interactiveResponse = await msalInstance.acquireTokenPopup({
-                scopes: [`api://${process.env.NEXT_PUBLIC_AZURE_CLIENT_ID}/.default`],
+                scopes: [`${process.env.NEXT_PUBLIC_AZURE_CLIENT_ID}/.default`],
                 account: accounts[0],
               });
               if (interactiveResponse.accessToken) {

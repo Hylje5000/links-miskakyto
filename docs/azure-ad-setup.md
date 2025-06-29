@@ -106,11 +106,13 @@ AZURE_TENANT_ID=your-directory-tenant-id
 3. Open browser dev tools > Console
 4. Look for these log messages:
    - ✅ `🔑 Using access token for custom API authentication`
-   - ✅ `🎯 Token audience should be: api://your-client-id`
+   - ✅ `🎯 Token audience should be: 81f7c571-588d-4a13-be31-3cc8da4bf4fe`
 
 If you see:
-- ❌ `⚠️ Using ID token as fallback` - Your API isn't properly exposed
+- ❌ `⚠️ Using ID token as fallback` - Your API isn't properly exposed or scope format is incorrect
 - ❌ `❌ Custom API access token acquisition failed` - Check permissions and consent
+
+**Note**: When using a single app registration for both frontend and backend, the frontend requests tokens using the scope `{client-id}/.default` (without the `api://` prefix).
 
 ### Debug API Authentication
 
@@ -145,8 +147,10 @@ curl -X POST http://localhost:8000/api/links \
 
 **Solution**: This means your frontend is requesting a token for Microsoft Graph instead of your custom API. Check:
 1. Your API is properly exposed (step 3)
-2. Frontend is requesting the correct scope: `api://your-client-id/.default`
+2. Frontend is requesting the correct scope: `{client-id}/.default` (without `api://` prefix)
 3. Permission was granted for your custom API
+
+**Note**: When an app requests a token for itself, use the GUID format (`{client-id}/.default`) rather than the URI format (`api://{client-id}/.default`).
 
 ### Consent Required Errors
 

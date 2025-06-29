@@ -17,7 +17,7 @@ export const loginRequest = {
 };
 
 export const apiRequest = {
-  scopes: [`api://${process.env.NEXT_PUBLIC_AZURE_CLIENT_ID}/.default`],
+  scopes: [`${process.env.NEXT_PUBLIC_AZURE_CLIENT_ID}/.default`],
 };
 
 // Test mode helpers
