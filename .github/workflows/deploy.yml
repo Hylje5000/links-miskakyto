@@ -101,8 +101,20 @@ jobs:
             echo "✅ Found existing .env file, keeping current configuration"
           fi
           
-          # Start services (this will build containers automatically)
-          echo "🏗️ Building and starting services..."
+          # Force rebuild containers to pick up code changes
+          echo "🏗️ Stopping existing containers..."
+          ./manage-fullstack.sh stop
+          
+          echo "🗑️ Removing old images to force rebuild..."
+          docker-compose -f docker-compose.fullstack.yml down --rmi local || true
+          
+          echo "🔨 Building containers from scratch (no cache)..."
+          export BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          export VCS_REF=${{ github.sha }}
+          export CACHEBUST=${{ github.run_number }}
+          docker-compose -f docker-compose.fullstack.yml build --no-cache
+          
+          echo "🚀 Starting services with fresh containers..."
           ./manage-fullstack.sh start
           
           # Wait for services to start

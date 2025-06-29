@@ -1,0 +1,33 @@
+services:
+  # Override for development - always rebuild
+  linkshortener-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      cache_from: []  # Disable cache
+      args:
+        - BUILDKIT_INLINE_CACHE=0
+        - BUILD_DATE
+        - VCS_REF
+        - CACHEBUST=${RANDOM:-1}  # Random cache buster
+  
+  linkshortener-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      cache_from: []  # Disable cache
+      args:
+        - BUILDKIT_INLINE_CACHE=0
+        - BUILD_DATE
+        - VCS_REF
+        - CACHEBUST=${RANDOM:-1}  # Random cache buster
+  
+  linkshortener-nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+      cache_from: []  # Disable cache
+      args:
+        - BUILD_DATE
+        - VCS_REF
+        - CACHEBUST=${RANDOM:-1}  # Random cache buster

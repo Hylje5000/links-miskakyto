@@ -67,7 +67,11 @@ start_services() {
     # Create data directory if it doesn't exist
     mkdir -p data
     
-    docker-compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" up -d
+    # Build and start containers (always pull latest and rebuild)
+    export BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+    export VCS_REF=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+    
+    docker-compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" up -d --build
     
     if [ $? -eq 0 ]; then
         print_success "Services started successfully!"
@@ -99,6 +103,51 @@ restart_services() {
     stop_services
     sleep 2
     start_services
+}
+
+# Force rebuild services (clean rebuild)
+rebuild_services() {
+    print_status "Force rebuilding LinkShortener services..."
+    check_env
+    
+    # Stop and remove everything
+    docker-compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" down --rmi local --volumes --remove-orphans 2>/dev/null || true
+    
+    # Remove dangling images
+    docker image prune -f
+    
+    # Set build variables
+    export BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+    export VCS_REF=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+    
+    print_status "Building containers from scratch (no cache)..."
+    
+    # Create data directory if it doesn't exist
+    mkdir -p data
+    
+    # Build and start with no cache
+    docker-compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" build --no-cache
+    docker-compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" up -d
+    
+    if [ $? -eq 0 ]; then
+        print_success "Services rebuilt and started successfully!"
+        print_status "Frontend: http://localhost:8080"
+        print_status "Backend API: http://localhost:8080/api"
+        print_status "Health check: http://localhost:8080/api/health"
+        
+        print_status "Waiting for services to be ready..."
+        sleep 10
+        
+        # Test health endpoint
+        if curl -f -s http://localhost:8080/api/health > /dev/null; then
+            print_success "Health check passed!"
+        else
+            print_error "Health check failed - services may need more time to start"
+        fi
+    else
+        print_error "Failed to rebuild services"
+        exit 1
+    fi
 }
 
 # Show service status
@@ -188,6 +237,7 @@ show_usage() {
     echo "  start           Start all services"
     echo "  stop            Stop all services"
     echo "  restart         Restart all services"
+    echo "  rebuild         Force rebuild all containers (clean build)"
     echo "  status          Show service status"
     echo "  logs [service]  Show logs (optionally for specific service)"
     echo "  update          Update and restart services"
@@ -197,6 +247,7 @@ show_usage() {
     echo ""
     echo "Examples:"
     echo "  $0 start                    # Start all services"
+    echo "  $0 rebuild                  # Force clean rebuild (fixes cache issues)"
     echo "  $0 logs                     # Show all logs"
     echo "  $0 logs backend             # Show backend logs only"
     echo "  $0 status                   # Show service status"
@@ -215,6 +266,9 @@ main() {
             ;;
         restart)
             restart_services
+            ;;
+        rebuild)
+            rebuild_services
             ;;
         status)
             show_status

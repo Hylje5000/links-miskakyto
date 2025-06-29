@@ -4,6 +4,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+        - BUILD_DATE=${BUILD_DATE:-unknown}
+        - VCS_REF=${GITHUB_SHA:-unknown}
     environment:
       - NEXT_PUBLIC_API_URL=https://links.miskakyto.fi
       - NEXT_PUBLIC_AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
@@ -20,6 +24,10 @@ services:
     build: 
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+        - BUILD_DATE=${BUILD_DATE:-unknown}
+        - VCS_REF=${GITHUB_SHA:-unknown}
     environment:
       - PRODUCTION=true
       - BASE_URL=https://links.miskakyto.fi
