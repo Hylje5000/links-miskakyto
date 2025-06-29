@@ -8,6 +8,10 @@ services:
         - BUILDKIT_INLINE_CACHE=1
         - BUILD_DATE=${BUILD_DATE:-unknown}
         - VCS_REF=${VCS_REF:-unknown}
+        - NEXT_PUBLIC_AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+        - NEXT_PUBLIC_AZURE_TENANT_ID=${AZURE_TENANT_ID}
+        - NEXT_PUBLIC_API_URL=https://links.miskakyto.fi
+        - NEXT_PUBLIC_REDIRECT_URI=https://links.miskakyto.fi
       cache_from:
         - linkshortener-linkshortener-frontend:latest
     environment:
