@@ -175,6 +175,25 @@ async def startup_event():
 async def root():
     return {"message": "Link Shortener API", "version": "1.0.0"}
 
+@app.get("/debug/routes")
+async def debug_routes():
+    """Debug endpoint to list all registered routes"""
+    return {
+        "message": "Routes debug endpoint",
+        "available_endpoints": [
+            "GET /",
+            "GET /api/health", 
+            "GET /debug/routes",
+            "POST /api/links",
+            "GET /api/links",
+            "GET /api/links/{link_id}",
+            "PUT /api/links/{link_id}",
+            "DELETE /api/links/{link_id}",
+            "GET /api/links/{link_id}/analytics",
+            "GET /{short_code}"
+        ]
+    }
+
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint for monitoring and deployment"""

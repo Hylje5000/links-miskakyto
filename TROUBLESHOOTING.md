@@ -11,7 +11,43 @@
 **Solution:** Consolidated to single health endpoint:
 - `/api/health` - Primary health check endpoint (removed `/health` for simplicity)
 
-**If still getting 404 after pushing changes, follow these debug steps:**
+**If still getting 404 for /api/health after pushing changes, the backend container needs to be rebuilt:**
+
+#### Step 1: Force container rebuild (MOST COMMON SOLUTION)
+```bash
+# SSH into VM
+ssh miska@4.210.156.244
+cd /home/miska/linkshortener
+
+# Stop containers and force rebuild backend
+./manage-fullstack.sh stop
+docker-compose -f docker-compose.fullstack.yml build --no-cache linkshortener-backend
+./manage-fullstack.sh start
+
+# Wait 30 seconds for startup
+sleep 30
+
+# Test - should now return 200 with health JSON
+curl http://localhost:8080/api/health
+```
+
+#### Step 2: Verify backend has latest code
+```bash
+# Check what endpoints are available in the backend
+curl http://localhost:8080/debug/routes
+
+# Should show /api/health in the list
+# If it doesn't, the container still has old code
+```
+
+#### Step 3: Debug backend directly
+```bash
+# Test backend container directly (bypassing nginx)
+docker-compose -f docker-compose.fullstack.yml exec linkshortener-backend curl http://localhost:8000/api/health
+
+# If this returns 404, the backend definitely needs rebuilding
+# If this works but nginx returns 404, it's a routing issue
+```
 
 #### Step 1: Check if deployment completed
 ```bash
