@@ -74,7 +74,7 @@ if [ "$REBUILD_BACKEND" = false ] && [ "$REBUILD_FRONTEND" = false ] && [ "$REBU
     print_success "🎉 No changes detected!"
     
     # Check if containers are running
-    if docker-compose -f docker-compose.fullstack.yml ps | grep -q "Up"; then
+    if docker-compose -f docker/docker/docker-compose.fullstack.yml ps | grep -q "Up"; then
         print_success "✅ Containers are already running"
         print_info "🧪 Running health check..."
         
@@ -89,7 +89,7 @@ if [ "$REBUILD_BACKEND" = false ] && [ "$REBUILD_FRONTEND" = false ] && [ "$REBU
         fi
     else
         print_info "🚀 Containers not running, starting existing images..."
-        docker-compose -f docker-compose.fullstack.yml up -d
+        docker-compose -f docker/docker-compose.fullstack.yml up -d
         sleep 30
         
         if curl -s http://localhost:8080/api/health > /dev/null; then
@@ -106,7 +106,7 @@ fi
 
 # Stop containers before rebuilding
 print_status "🛑 Stopping containers..."
-docker-compose -f docker-compose.fullstack.yml down
+docker-compose -f docker/docker-compose.fullstack.yml down
 
 # Selective rebuild
 BUILD_ARGS=""
@@ -132,12 +132,12 @@ export VCS_REF=$CURRENT_COMMIT
 
 if [ -n "$BUILD_ARGS" ]; then
     print_status "🔨 Building changed services: $BUILD_ARGS"
-    docker-compose -f docker-compose.fullstack.yml build $BUILD_ARGS
+    docker-compose -f docker/docker-compose.fullstack.yml build $BUILD_ARGS
 fi
 
 # Start all containers
 print_status "🚀 Starting containers..."
-docker-compose -f docker-compose.fullstack.yml up -d
+docker-compose -f docker/docker-compose.fullstack.yml up -d
 
 # Wait for startup
 print_status "⏱️  Waiting for services to start..."

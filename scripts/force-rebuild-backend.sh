@@ -23,8 +23,8 @@ print_error() {
 }
 
 # Check if we're in the right directory
-if [ ! -f "docker-compose.fullstack.yml" ]; then
-    print_error "❌ docker-compose.fullstack.yml not found. Please run from the project root."
+if [ ! -f "docker/docker-compose.fullstack.yml" ]; then
+    print_error "❌ docker/docker-compose.fullstack.yml not found. Please run from the project root."
     exit 1
 fi
 
@@ -35,7 +35,7 @@ print_status "🗑️  Removing old backend image..."
 docker rmi linkshortener-linkshortener-backend:latest 2>/dev/null || true
 
 print_status "🔨 Rebuilding backend container from scratch (no cache)..."
-docker-compose -f docker-compose.fullstack.yml build --no-cache linkshortener-backend
+docker-compose -f docker/docker-compose.fullstack.yml build --no-cache linkshortener-backend
 
 print_status "🚀 Starting all containers..."
 ./manage-fullstack.sh start
@@ -47,7 +47,7 @@ print_status "🧪 Testing endpoints..."
 
 echo ""
 echo "1. Testing backend directly:"
-if docker-compose -f docker-compose.fullstack.yml exec -T linkshortener-backend curl -s http://localhost:8000/api/health > /dev/null; then
+if docker-compose -f docker/docker-compose.fullstack.yml exec -T linkshortener-backend curl -s http://localhost:8000/api/health > /dev/null; then
     print_success "✅ Backend /api/health works directly"
 else
     print_error "❌ Backend /api/health still fails directly"

@@ -1,6 +1,6 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
+# Dependencies
 /node_modules
 /.pnp
 .pnp.*
@@ -10,14 +10,14 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
+# Testing
 /coverage
 
-# next.js
+# Next.js
 /.next/
 /out/
 
-# production
+# Production
 /build
 
 # misc
@@ -76,8 +76,21 @@ pytest_cache/
 # Backup files
 *.bak
 *.backup
-page_old.tsx
-page_new.tsx
 
 # Logs
 *.log
+
+# Development artifacts
+tsconfig.tsbuildinfo
+links.db
+.swc/
+
+# Docker development
+.env.production
+docker-compose.override.yml
+
+# Cleanup and temporary files
+CLEANUP_PLAN.md
+*_old.*
+*_new.*
+*.tmp

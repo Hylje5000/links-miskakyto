@@ -5,7 +5,9 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-    types: [ closed ]
+    types:          echo "🚀 Running smart deployment (only rebuilds changed components)..."
+          chmod +x ./scripts/smart-deploy.sh
+          ./scripts/smart-deploy.shclosed ]
 
 env:
   VM_HOST: 4.210.156.244
@@ -73,7 +75,7 @@ jobs:
           echo "🛑 Stopping services..."
           if [ -f manage-fullstack.sh ]; then
             chmod +x manage-fullstack.sh
-            ./manage-fullstack.sh stop || true
+            ./scripts/manage-fullstack.sh stop || true
           fi
           
           # Initialize git repository if needed
@@ -89,7 +91,8 @@ jobs:
           git reset --hard origin/main
           
           # Make scripts executable
-          chmod +x manage-fullstack.sh
+          chmod +x script./scripts/manage-fullstack.sh
+          chmod +x scripts/smart-deploy.sh
           
           # Set up environment (preserve existing .env)
           if [ ! -f .env ]; then
@@ -103,18 +106,18 @@ jobs:
           
           # Force rebuild containers to pick up code changes
           echo "🏗️ Stopping existing containers..."
-          ./manage-fullstack.sh stop
+          ./script./scripts/manage-fullstack.sh stop
           
           echo "🗑️ Removing old images to force rebuild..."
-          docker-compose -f docker-compose.fullstack.yml down --rmi local || true
+          docker-compose -f docker/docker-compose.fullstack.yml down --rmi local || true
           
           echo "� Running smart deployment (only rebuilds changed components)..."
           chmod +x ./smart-deploy.sh
           ./smart-deploy.sh
             echo "📊 Container status:"
-            ./manage-fullstack.sh status
+            ./scripts/manage-fullstack.sh status
             echo "📝 Recent logs:"
-            ./manage-fullstack.sh logs --tail=50
+            ./scripts/manage-fullstack.sh logs --tail=50
             # Don't fail deployment if health check fails but containers are running
             echo "⚠️ Continuing deployment despite health check failure"
           fi

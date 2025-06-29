@@ -5,7 +5,7 @@
 
 set -e
 
-COMPOSE_FILE="docker-compose.fullstack.yml"
+COMPOSE_FILE="docker/docker-compose.fullstack.yml"
 PROJECT_NAME="linkshortener"
 
 # Colors for output
