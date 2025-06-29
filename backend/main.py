@@ -212,15 +212,17 @@ async def debug_routes():
     }
 
 @app.get("/api/debug/auth")
-async def debug_auth(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
-    """Debug endpoint to check authentication status"""
+async def debug_auth():
+    """Debug endpoint to check authentication status (public access)"""
     return {
         "test_mode": TEST_MODE,
-        "has_credentials": credentials is not None,
         "azure_tenant_id": AZURE_TENANT_ID is not None,
         "azure_client_id": os.getenv("AZURE_CLIENT_ID") is not None,
-        "token_length": len(credentials.credentials) if credentials else 0,
-        "token_preview": credentials.credentials[:20] + "..." if credentials else None
+        "azure_tenant_id_value": AZURE_TENANT_ID[:8] + "..." if AZURE_TENANT_ID else None,
+        "azure_client_id_value": (os.getenv("AZURE_CLIENT_ID") or "")[:8] + "..." if os.getenv("AZURE_CLIENT_ID") else None,
+        "base_url": BASE_URL,
+        "cors_origins": os.getenv("ALLOWED_ORIGINS", "http://localhost:3000"),
+        "environment": "production" if os.getenv('PRODUCTION', 'false').lower() == 'true' else "development"
     }
 
 @app.get("/api/health")

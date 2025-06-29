@@ -27,7 +27,8 @@ This guide walks you through setting up Azure AD app registration for the Link S
    - ✅ **ID tokens** (used for implicit and hybrid flows)
 3. Add redirect URIs for all environments:
    - `http://localhost:3000` (development)
-   - `https://your-production-domain.com` (production)
+   - `https://links.miskakyto.fi` (production)
+   - Any other domains where your app will be hosted
 4. Click "Save"
 
 ### 3. Expose an API (CRITICAL STEP)
@@ -87,14 +88,21 @@ Then the frontend app would request permissions to the backend app's exposed API
 From your app registration overview page, copy these values to your `.env` file:
 
 ```bash
-# Frontend
+# Frontend (Development)
 NEXT_PUBLIC_AZURE_CLIENT_ID=your-application-client-id
 NEXT_PUBLIC_AZURE_TENANT_ID=your-directory-tenant-id
 NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000
 
-# Backend
+# Frontend (Production)
+NEXT_PUBLIC_AZURE_CLIENT_ID=81f7c571-588d-4a13-be31-3cc8da4bf4fe
+NEXT_PUBLIC_AZURE_TENANT_ID=d53dc26d-d4c3-47b9-aa62-ba032ee23f13
+NEXT_PUBLIC_REDIRECT_URI=https://links.miskakyto.fi
+NEXT_PUBLIC_API_URL=https://links.miskakyto.fi
+
+# Backend (Both environments)
 AZURE_CLIENT_ID=your-application-client-id
 AZURE_TENANT_ID=your-directory-tenant-id
+TEST_MODE=false
 ```
 
 ## Verify Configuration
