@@ -9,7 +9,7 @@ import aiosqlite
 # Set test mode before importing the main app
 os.environ["TEST_MODE"] = "true"
 
-from main import app, init_db
+from main import app
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -25,15 +25,44 @@ async def test_db():
     temp_db = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
     temp_db.close()
     
-    # Initialize the test database
-    old_db_path = "links.db"
-    
-    # Use the temporary database by setting an environment variable
-    import os
+    # Set the test database path in environment
     os.environ['TEST_DB_PATH'] = temp_db.name
     
-    # Initialize the database
-    await init_db()
+    # Initialize the test database directly
+    async with aiosqlite.connect(temp_db.name) as db:
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS links (
+                id TEXT PRIMARY KEY,
+                original_url TEXT NOT NULL,
+                short_code TEXT UNIQUE NOT NULL,
+                description TEXT,
+                click_count INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_by TEXT NOT NULL,
+                tenant_id TEXT NOT NULL
+            )
+        """)
+        
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS clicks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                link_id TEXT NOT NULL,
+                clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                ip_address TEXT,
+                user_agent TEXT,
+                FOREIGN KEY (link_id) REFERENCES links (id)
+            )
+        """)
+        
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_links_tenant ON links(tenant_id)
+        """)
+        
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_links_created_by ON links(created_by)
+        """)
+        
+        await db.commit()
     
     yield temp_db.name
     

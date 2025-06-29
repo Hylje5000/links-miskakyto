@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from typing import Optional
 import aiosqlite
 import shortuuid
 import validators
@@ -37,7 +38,8 @@ app.add_middleware(
 )
 
 # Security
-security = HTTPBearer()
+# Security configuration
+security = HTTPBearer(auto_error=not TEST_MODE)
 
 # Environment variables
 AZURE_TENANT_ID = os.getenv("AZURE_TENANT_ID")
@@ -129,11 +131,9 @@ async def init_db():
 from auth import token_validator
 
 # Authentication helper
-async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
-    
+async def verify_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
     if TEST_MODE:
-        # In test mode, return mock user data
+        # In test mode, return mock user data regardless of credentials
         return {
             "oid": "test-user-id",
             "name": "Test User",
@@ -141,6 +141,10 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
             "tid": "test-tenant-id"
         }
     
+    if not credentials:
+        raise HTTPException(status_code=403, detail="Authentication required")
+    
+    token = credentials.credentials
     return await token_validator.validate_token(token)
 
 # Helper functions
