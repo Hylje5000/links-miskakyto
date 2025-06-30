@@ -61,15 +61,15 @@ has_changes() {
     
     # More explicit debugging
     if [ $result -eq 0 ]; then
-        # No changes (return 0 = false in bash conditions)
-        return 0
-    elif [ $result -eq 1 ]; then
-        # Has changes (return 1 = true in bash conditions)  
+        # No changes (return 1 = false in bash if conditions)
         return 1
+    elif [ $result -eq 1 ]; then
+        # Has changes (return 0 = true in bash if conditions)  
+        return 0
     else
         # Error case (treat as no changes to be safe)
         print_error "⚠️ Error checking changes for $path (exit code: $result)"
-        return 0
+        return 1
     fi
 }
 
