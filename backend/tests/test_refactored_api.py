@@ -249,3 +249,69 @@ class TestRefactoredAPI:
         assert response.status_code == 200
         # Should return an empty list for a new test database
         assert isinstance(response.json(), list)
+
+    def test_ip_extraction_with_headers(self, client: TestClient):
+        """Test that client IP is correctly extracted from proxy headers."""
+        # Create a link first
+        link_data = {
+            "original_url": "https://example.com/test-ip-extraction",
+            "description": "Test IP extraction"
+        }
+        
+        response = client.post("/api/links", json=link_data)
+        assert response.status_code == 200
+        link_response = response.json()
+        short_code = link_response["short_code"]
+        link_id = link_response["id"]
+        
+        # Test redirect with X-Forwarded-For header
+        test_ip = "203.0.113.1"  # Example public IP
+        response = client.get(
+            f"/{short_code}",
+            headers={"X-Forwarded-For": f"{test_ip}, 172.19.0.1"},
+            allow_redirects=False
+        )
+        assert response.status_code == 302
+        
+        # Check analytics to see if the IP was recorded correctly
+        analytics_response = client.get(f"/api/links/{link_id}/analytics")
+        assert analytics_response.status_code == 200
+        analytics_data = analytics_response.json()
+        
+        # The IP should be the first IP from X-Forwarded-For
+        clicks = analytics_data["recent_clicks"]
+        assert len(clicks) == 1
+        assert clicks[0]["ip_address"] == test_ip
+
+    def test_ip_extraction_with_real_ip_header(self, client: TestClient):
+        """Test that client IP is correctly extracted from X-Real-IP header."""
+        # Create a link first
+        link_data = {
+            "original_url": "https://example.com/test-real-ip",
+            "description": "Test Real IP extraction"
+        }
+        
+        response = client.post("/api/links", json=link_data)
+        assert response.status_code == 200
+        link_response = response.json()
+        short_code = link_response["short_code"]
+        link_id = link_response["id"]
+        
+        # Test redirect with X-Real-IP header
+        test_ip = "198.51.100.1"  # Example public IP
+        response = client.get(
+            f"/{short_code}",
+            headers={"X-Real-IP": test_ip},
+            allow_redirects=False
+        )
+        assert response.status_code == 302
+        
+        # Check analytics to see if the IP was recorded correctly
+        analytics_response = client.get(f"/api/links/{link_id}/analytics")
+        assert analytics_response.status_code == 200
+        analytics_data = analytics_response.json()
+        
+        # The IP should be from X-Real-IP
+        clicks = analytics_data["recent_clicks"]
+        assert len(clicks) == 1
+        assert clicks[0]["ip_address"] == test_ip

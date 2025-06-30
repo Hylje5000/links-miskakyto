@@ -6,6 +6,29 @@ from fastapi.responses import RedirectResponse
 
 from app.services.link_service import LinkService
 
+
+def get_client_ip(request: Request) -> str:
+    """
+    Extract the real client IP address from request headers.
+    Checks X-Forwarded-For and X-Real-IP headers set by nginx proxy.
+    """
+    # Check X-Forwarded-For header (may contain multiple IPs)
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        # X-Forwarded-For can contain multiple IPs, take the first one (original client)
+        client_ip = forwarded_for.split(",")[0].strip()
+        if client_ip:
+            return client_ip
+    
+    # Check X-Real-IP header
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip:
+        return real_ip
+    
+    # Fallback to direct client IP (will be container IP in proxied setups)
+    return request.client.host if request.client else "unknown"
+
+
 router = APIRouter(tags=["redirect"])
 
 
@@ -13,7 +36,7 @@ router = APIRouter(tags=["redirect"])
 async def redirect_to_original(short_code: str, request: Request):
     """Redirect to the original URL using the short code."""
     # Get client IP and user agent for analytics
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = get_client_ip(request)
     user_agent = request.headers.get("user-agent", "unknown")
     
     # Get original URL and track click
