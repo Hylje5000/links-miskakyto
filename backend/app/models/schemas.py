@@ -47,10 +47,3 @@ class HealthResponse(BaseModel):
     status: str
     timestamp: str
     version: str
-
-
-class DebugResponse(BaseModel):
-    """Model for debug response."""
-    success: bool
-    message: str
-    data: Optional[dict] = None

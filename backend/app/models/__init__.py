@@ -7,7 +7,6 @@ from .schemas import (
     LinkResponse,
     AnalyticsResponse,
     HealthResponse,
-    DebugResponse,
 )
 
 __all__ = [
@@ -16,5 +15,4 @@ __all__ = [
     "LinkResponse",
     "AnalyticsResponse",
     "HealthResponse",
-    "DebugResponse",
 ]

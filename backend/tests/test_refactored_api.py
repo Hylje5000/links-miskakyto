@@ -26,15 +26,6 @@ class TestRefactoredAPI:
         assert "timestamp" in data
         assert data["version"] == "1.0.0"
 
-    def test_debug_routes(self, client: TestClient):
-        """Test the debug routes endpoint."""
-        response = client.get("/debug/routes")
-        assert response.status_code == 200
-        data = response.json()
-        assert "available_routes" in data
-        assert "test_mode" in data
-        assert data["test_mode"] is True
-
     async def test_create_link(self, async_client: AsyncClient, auth_headers: dict):
         """Test creating a new link."""
         link_data = {
