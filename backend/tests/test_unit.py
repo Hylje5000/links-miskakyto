@@ -20,7 +20,8 @@ class TestLinkService:
         """Test short code generation."""
         code = LinkService.generate_short_code()
         assert isinstance(code, str)
-        assert len(code) == 8
+        assert 6 <= len(code) <= 14  # Word-based codes are variable length
+        assert code.isalnum()  # Should contain only letters and numbers
         
         # Generate multiple codes to ensure they're different
         codes = [LinkService.generate_short_code() for _ in range(10)]
@@ -124,3 +125,45 @@ class TestModels:
         """Test LinkUpdate model."""
         update = LinkUpdate(description="Updated description")
         assert update.description == "Updated description"
+
+
+@pytest.mark.unit
+class TestWordGenerator:
+    """Unit tests for WordCodeGenerator."""
+
+    def test_generate_word_code(self):
+        """Test word-based code generation."""
+        from app.services.word_generator import WordCodeGenerator
+        
+        code = WordCodeGenerator.generate_word_code()
+        assert isinstance(code, str)
+        assert 6 <= len(code) <= 14
+        assert code.isalnum()
+        assert code.islower()  # Should be lowercase
+        
+        # Generate multiple codes
+        codes = [WordCodeGenerator.generate_word_code() for _ in range(20)]
+        assert len(set(codes)) >= 15  # Most should be unique (allowing some duplicates)
+
+    def test_generate_numbered_code(self):
+        """Test numbered word-based code generation."""
+        from app.services.word_generator import WordCodeGenerator
+        
+        code = WordCodeGenerator.generate_numbered_code()
+        assert isinstance(code, str)
+        assert code.isalnum()
+        assert any(char.isdigit() for char in code)  # Should contain numbers
+        assert any(char.isalpha() for char in code)  # Should contain letters
+
+    def test_appropriateness_check(self):
+        """Test the appropriateness filter."""
+        from app.services.word_generator import WordCodeGenerator
+        
+        # Test appropriate codes
+        assert WordCodeGenerator.is_appropriate("happycat") == True
+        assert WordCodeGenerator.is_appropriate("bluebird") == True
+        assert WordCodeGenerator.is_appropriate("fastrun") == True
+        
+        # Test inappropriate codes (basic filter)
+        assert WordCodeGenerator.is_appropriate("hellcat") == False
+        assert WordCodeGenerator.is_appropriate("damnthing") == False

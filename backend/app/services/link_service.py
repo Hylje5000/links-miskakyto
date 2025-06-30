@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from app.core.database import DatabaseManager
 from app.core.config import settings
 from app.models.schemas import LinkCreate, LinkUpdate, LinkResponse, AnalyticsResponse
+from app.services.word_generator import WordCodeGenerator
 
 
 class LinkService:
@@ -16,7 +17,22 @@ class LinkService:
     
     @staticmethod
     def generate_short_code() -> str:
-        """Generate a unique short code."""
+        """Generate a memorable word-based short code."""
+        max_attempts = 10
+        
+        for attempt in range(max_attempts):
+            # Try word-based code first (80% of the time)
+            if attempt < 8:
+                code = WordCodeGenerator.generate_word_code()
+            else:
+                # Fallback to numbered word code for variety
+                code = WordCodeGenerator.generate_numbered_code()
+            
+            # Check if the code is appropriate
+            if WordCodeGenerator.is_appropriate(code):
+                return code
+        
+        # Ultimate fallback to original random code if word generation fails
         return shortuuid.uuid()[:8]
     
     @staticmethod
