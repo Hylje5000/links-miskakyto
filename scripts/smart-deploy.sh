@@ -28,15 +28,21 @@ print_success() { echo -e "${GREEN}$1${NC}"; }
 print_info() { echo -e "${BLUE}$1${NC}"; }
 print_error() { echo -e "${RED}$1${NC}"; }
 
-# Get the last deployment commit (or use last 5 commits if file doesn't exist)
-LAST_DEPLOYMENT_FILE="/tmp/last_deployment_commit"
+# Get the last deployment commit (or use last 1 commit if file doesn't exist)
+LAST_DEPLOYMENT_FILE="$HOME/.linkshortener_last_deployment"
 if [ -f "$LAST_DEPLOYMENT_FILE" ]; then
     LAST_COMMIT=$(cat "$LAST_DEPLOYMENT_FILE")
     print_info "📋 Last deployment commit: $LAST_COMMIT"
+    
+    # Verify the commit exists
+    if ! git cat-file -e "$LAST_COMMIT" 2>/dev/null; then
+        print_error "⚠️ Stored commit $LAST_COMMIT doesn't exist, falling back to HEAD~1"
+        LAST_COMMIT=$(git rev-parse HEAD~1)
+    fi
 else
-    # If no previous deployment, check last 5 commits to be safe
-    LAST_COMMIT=$(git rev-parse HEAD~5)
-    print_info "📋 No previous deployment found, checking last 5 commits"
+    # If no previous deployment, check last 1 commit (not 5!)
+    LAST_COMMIT=$(git rev-parse HEAD~1)
+    print_info "📋 No previous deployment found, checking last 1 commit: $LAST_COMMIT"
 fi
 
 CURRENT_COMMIT=$(git rev-parse HEAD)
@@ -44,8 +50,27 @@ CURRENT_COMMIT=$(git rev-parse HEAD)
 # Function to check if a path has changes
 has_changes() {
     local path=$1
-    git diff --quiet "$LAST_COMMIT" "$CURRENT_COMMIT" -- "$path" 2>/dev/null
-    return $?
+    local last_commit="$LAST_COMMIT"
+    local current_commit="$CURRENT_COMMIT"
+    
+    # Debug output for troubleshooting
+    # print_info "Checking changes in: $path (from $last_commit to $current_commit)"
+    
+    git diff --quiet "$last_commit" "$current_commit" -- "$path" 2>/dev/null
+    local result=$?
+    
+    # More explicit debugging
+    if [ $result -eq 0 ]; then
+        # No changes (return 0 = false in bash conditions)
+        return 0
+    elif [ $result -eq 1 ]; then
+        # Has changes (return 1 = true in bash conditions)  
+        return 1
+    else
+        # Error case (treat as no changes to be safe)
+        print_error "⚠️ Error checking changes for $path (exit code: $result)"
+        return 0
+    fi
 }
 
 # Check what needs rebuilding
@@ -54,11 +79,19 @@ REBUILD_FRONTEND=false
 REBUILD_NGINX=false
 
 print_status "🔍 Analyzing changes..."
+print_info "Comparing $LAST_COMMIT -> $CURRENT_COMMIT"
+
+# Show what files actually changed
+CHANGED_FILES=$(git diff --name-only "$LAST_COMMIT" "$CURRENT_COMMIT" 2>/dev/null || echo "Error getting changed files")
+print_info "Changed files: $CHANGED_FILES"
 
 # Check backend changes
 if has_changes "backend/" || has_changes "requirements.txt"; then
     REBUILD_BACKEND=true
     print_info "🔄 Backend changes detected"
+    # Show specific backend changes
+    BACKEND_CHANGES=$(git diff --name-only "$LAST_COMMIT" "$CURRENT_COMMIT" -- backend/ requirements.txt 2>/dev/null || echo "none")
+    print_info "   Backend files changed: $BACKEND_CHANGES"
 else
     print_success "✅ Backend unchanged"
 fi
@@ -67,6 +100,9 @@ fi
 if has_changes "src/" || has_changes "package.json" || has_changes "package-lock.json" || has_changes "next.config.js" || has_changes "tailwind.config.js"; then
     REBUILD_FRONTEND=true
     print_info "🔄 Frontend changes detected"
+    # Show specific frontend changes
+    FRONTEND_CHANGES=$(git diff --name-only "$LAST_COMMIT" "$CURRENT_COMMIT" -- src/ package.json package-lock.json next.config.js tailwind.config.js 2>/dev/null || echo "none")
+    print_info "   Frontend files changed: $FRONTEND_CHANGES"
 else
     print_success "✅ Frontend unchanged"
 fi
@@ -75,6 +111,9 @@ fi
 if has_changes "docker/nginx-docker.conf" || has_changes "docker/Dockerfile.nginx"; then
     REBUILD_NGINX=true
     print_info "🔄 Nginx changes detected"
+    # Show specific nginx changes
+    NGINX_CHANGES=$(git diff --name-only "$LAST_COMMIT" "$CURRENT_COMMIT" -- docker/nginx-docker.conf docker/Dockerfile.nginx 2>/dev/null || echo "none")
+    print_info "   Nginx files changed: $NGINX_CHANGES"
 else
     print_success "✅ Nginx unchanged"
 fi
