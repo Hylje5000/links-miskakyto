@@ -1,127 +1,224 @@
 # LinkShortener 🔗
 
-A modern URL shortener with memorable word-based short codes and Microsoft Entra ID authentication.
+A production-ready URL shortening service with Microsoft Entra ID authentication and memorable word-based short codes.
 
 ![Frontend](https://img.shields.io/badge/Frontend-Next.js%2015-black) ![Backend](https://img.shields.io/badge/Backend-FastAPI-green) ![Auth](https://img.shields.io/badge/Auth-Microsoft%20Entra%20ID-blue)
 
 ## ✨ Features
 
 - 🔐 **Microsoft Entra ID Authentication** - Secure enterprise login
-- 🎯 **Memorable Short Codes** - Word-based codes like `fastrun` and `happycat` instead of random characters
-- � **Click Analytics** - Track clicks and view detailed statistics  
-- 👥 **Multi-tenant** - Secure tenant-based access control
-- ⚡ **Fast & Modern** - Built with Next.js 15 and FastAPI
-- 🐋 **Easy Deployment** - Docker-based setup
+- 🎯 **Memorable Short Codes** - Word-based codes like `fastrun` and `happycat`
+- 📊 **Click Analytics** - Real IP tracking and detailed statistics  
+- ⚡ **Production Ready** - Docker-based deployment with smart builds
+- 🌐 **SSL Support** - HTTPS configuration included
 
-## 🚀 Quick Start
+## 🚀 Deployment Guide
 
 ### Prerequisites
-- Node.js 18+
-- Python 3.11+
-- Docker & Docker Compose
-- Azure AD app registration
+- Linux server with Docker & Docker Compose
+- Domain name pointed to your server
+- Microsoft Entra ID tenant access
 
-### 1. Setup
+### Step 1: Setup Microsoft Entra ID App Registration
+
+1. **Go to Azure Portal** → Entra ID → App registrations → New registration
+
+2. **Configure the App:**
+   - **Name:** `LinkShortener`
+   - **Supported account types:** Accounts in this organizational directory only
+   - **Redirect URI:** `https://yourdomain.com` (replace with your domain)
+
+3. **Note these values:**
+   - **Application (client) ID** 
+   - **Directory (tenant) ID**
+
+4. **Configure Authentication:**
+   - Go to Authentication → Add platform → Single-page application
+   - Add redirect URI: `https://yourdomain.com`
+   - Enable ID tokens checkbox
+
+5. **Set API Permissions:**
+   - Microsoft Graph → Delegated permissions → `openid`, `profile`
+   - Grant admin consent
+
+### Step 2: Server Setup
+
 ```bash
-git clone <repository-url>
+# Clone the repository
+git clone <your-repository-url>
 cd LinkShortener
-npm install
+
+# Create environment files
+cp .env.example .env
+cp .env.local.example .env.local
 ```
 
-### 2. Environment Configuration
+### Step 3: Configure Environment Variables
 
-Create `.env` file:
+**Edit `.env` (Backend):**
 ```env
-AZURE_TENANT_ID=your-tenant-id
-AZURE_CLIENT_ID=your-client-id
-BASE_URL=http://localhost:8080
+AZURE_TENANT_ID=your-directory-tenant-id
+AZURE_CLIENT_ID=your-application-client-id
+BASE_URL=https://yourdomain.com
+PRODUCTION=true
 ```
 
-Create `.env.local` file:
+**Edit `.env.local` (Frontend):**
 ```env
-NEXT_PUBLIC_AZURE_CLIENT_ID=your-client-id
-NEXT_PUBLIC_AZURE_TENANT_ID=your-tenant-id
-NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_AZURE_CLIENT_ID=your-application-client-id
+NEXT_PUBLIC_AZURE_TENANT_ID=your-directory-tenant-id
+NEXT_PUBLIC_API_URL=https://yourdomain.com
 ```
 
-### 3. Run with Docker
+### Step 4: SSL Certificate Setup
+
+**Option A: Let's Encrypt (Recommended)**
 ```bash
-# Start all services
+# Install certbot
+sudo apt update
+sudo apt install certbot
+
+# Generate certificate
+sudo certbot certonly --standalone -d yourdomain.com
+
+# Certificate files will be at:
+# /etc/letsencrypt/live/yourdomain.com/fullchain.pem
+# /etc/letsencrypt/live/yourdomain.com/privkey.pem
+```
+
+**Option B: Use your own SSL certificate**
+- Place certificate files in `deployment/ssl/`
+- Update paths in `deployment/nginx-https.conf`
+
+### Step 5: Deploy
+
+**Production deployment with SSL:**
+```bash
+# Deploy with HTTPS
 docker-compose -f docker/docker-compose.fullstack.yml up -d
 
+# Or use the smart deployment script
+./scripts/smart-deploy.sh
+```
+
+**HTTP-only deployment (not recommended for production):**
+```bash
+# Copy HTTP-only nginx config
+cp deployment/nginx-http-only.conf deployment/nginx-https.conf
+
+# Deploy
+docker-compose -f docker/docker-compose.fullstack.yml up -d
+```
+
+### Step 6: Verify Deployment
+
+1. **Health Check:** `https://yourdomain.com/api/health`
+2. **Frontend:** `https://yourdomain.com`
+3. **API Docs:** `https://yourdomain.com/api/docs`
+
+## 🔧 Post-Deployment
+
+### Update SSL Certificates (Let's Encrypt)
+```bash
+# Add to crontab for automatic renewal
+0 12 * * * /usr/bin/certbot renew --quiet && docker-compose -f /path/to/LinkShortener/docker/docker-compose.fullstack.yml restart linkshortener-nginx
+```
+
+### Monitoring
+```bash
 # View logs
 docker-compose -f docker/docker-compose.fullstack.yml logs -f
 
-# Stop services  
-docker-compose -f docker/docker-compose.fullstack.yml down
+# Check container status
+docker-compose -f docker/docker-compose.fullstack.yml ps
+
+# Restart services
+docker-compose -f docker/docker-compose.fullstack.yml restart
 ```
 
-Access the app at **http://localhost:8080**
-
-### 4. Development Mode (Alternative)
+### Updates
 ```bash
-# Terminal 1: Backend
-cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python main.py
+# Pull latest changes
+git pull origin main
 
-# Terminal 2: Frontend  
-npm run dev
+# Smart deployment (only rebuilds changed components)
+./scripts/smart-deploy.sh
 ```
-
-Access at **http://localhost:3000**
-
-## 📡 API Examples
-
-### Create a Short Link
-```bash
-curl -X POST "http://localhost:8080/api/links" \
-  -H "Authorization: Bearer <your-jwt-token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "original_url": "https://example.com/very/long/url",
-    "description": "My example link"
-  }'
-```
-
-### Use the Short Link
-Navigate to `http://localhost:8080/happycat` → redirects to your original URL
 
 ## 🏗️ Architecture
 
 **Frontend:** Next.js 15 + TypeScript + Tailwind CSS + Azure MSAL  
 **Backend:** FastAPI + SQLite + JWT validation  
-**Infrastructure:** Docker + Nginx reverse proxy
+**Infrastructure:** Docker + Nginx reverse proxy + SSL termination
 
 ```
-Frontend (Next.js)  →  Nginx  →  Backend (FastAPI)  →  SQLite
-     ↓                   ↓              ↓              ↓
-  Port 3000          Port 8080      Port 8000      Database
+Internet → Nginx (SSL) → Frontend (Next.js) → Backend (FastAPI) → SQLite
+  443/80      8080           3000              8000           Database
 ```
 
-## � Key Files
+## 📝 Configuration Files
 
-- `src/` - Next.js frontend application
-- `backend/` - FastAPI backend application  
-- `docker/` - Docker configurations
-- `.env` - Environment variables
-- `docker-compose.fullstack.yml` - Full stack deployment
+### Key Files Structure
+```
+LinkShortener/
+├── .env                    # Backend environment variables
+├── .env.local             # Frontend environment variables  
+├── docker/
+│   └── docker-compose.fullstack.yml  # Production deployment
+├── deployment/
+│   ├── nginx-https.conf   # SSL nginx configuration
+│   └── nginx-http-only.conf  # HTTP-only configuration
+└── scripts/
+    └── smart-deploy.sh    # Intelligent deployment script
+```
 
-## 📚 Learn More
+### Environment Variables Reference
 
-- **Backend API Docs:** http://localhost:8000/docs (when running)
-- **Health Check:** http://localhost:8080/api/health
-- **Architecture Details:** See `backend/` folder structure for clean architecture implementation
+| Variable | File | Description |
+|----------|------|-------------|
+| `AZURE_TENANT_ID` | `.env`, `.env.local` | Your Entra ID tenant/directory ID |
+| `AZURE_CLIENT_ID` | `.env`, `.env.local` | Your app registration client ID |
+| `BASE_URL` | `.env` | Your domain (https://yourdomain.com) |
+| `NEXT_PUBLIC_API_URL` | `.env.local` | API endpoint for frontend |
+| `PRODUCTION` | `.env` | Set to `true` for production mode |
 
-## 🤝 Contributing
+## 🚨 Security Notes
 
-1. Fork the repo
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+- Always use HTTPS in production
+- Keep your Entra ID client secret secure (not used in this SPA setup)
+- Regularly update SSL certificates
+- Monitor authentication logs in Azure Portal
+- Use proper firewall rules to restrict access
+
+## 🆘 Troubleshooting
+
+### Authentication Issues
+1. Verify Entra ID app registration redirect URIs
+2. Check tenant and client IDs in environment files
+3. Ensure user has access to the application
+
+### Deployment Issues
+```bash
+# Check container logs
+docker-compose -f docker/docker-compose.fullstack.yml logs linkshortener-backend
+docker-compose -f docker/docker-compose.fullstack.yml logs linkshortener-frontend
+docker-compose -f docker/docker-compose.fullstack.yml logs linkshortener-nginx
+
+# Restart specific service
+docker-compose -f docker/docker-compose.fullstack.yml restart linkshortener-backend
+```
+
+### SSL Certificate Issues
+```bash
+# Test certificate
+sudo certbot certificates
+
+# Renew certificate
+sudo certbot renew
+
+# Check nginx configuration
+docker exec linkshortener-nginx nginx -t
+```
 
 ## 📄 License
 
@@ -129,4 +226,4 @@ MIT License - see [LICENSE](LICENSE) file.
 
 ---
 
-**Built with ❤️ - Create memorable short links like `fastrun` instead of `7HAga6XA`!**
+**🔗 Create memorable short links like `fastrun` instead of random characters!**
