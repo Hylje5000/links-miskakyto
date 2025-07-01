@@ -68,10 +68,10 @@ htmlcov/
 pytest_cache/
 
 # IDEs
-.vscode/settings.json
 .idea/
 *.swp
 *.swo
+.vscode/
 
 # Backup files
 *.bak
