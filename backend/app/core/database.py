@@ -10,7 +10,7 @@ from app.core.config import settings
 def get_db_path() -> str:
     """Get the database file path."""
     # Extract path from DATABASE_URL
-    db_url = settings.database_url
+    db_url = settings.database.url
     if db_url.startswith("sqlite:///"):
         db_path = db_url[10:]  # Remove "sqlite:///" prefix
         
@@ -283,7 +283,7 @@ class DatabaseManager:
             
             # Get recent clicks
             cursor = await db.execute("""
-                SELECT clicked_at, ip_address, user_agent FROM clicks 
+                SELECT id, link_id, clicked_at, ip_address, user_agent FROM clicks 
                 WHERE link_id = ? 
                 ORDER BY clicked_at DESC 
                 LIMIT 10

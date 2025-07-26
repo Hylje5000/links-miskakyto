@@ -14,8 +14,11 @@ os.environ["TEST_MODE"] = "true"
 test_db_path = tempfile.mktemp(suffix=".db")
 os.environ["DATABASE_URL"] = f"sqlite:///{test_db_path}"
 
-from main import app
+from main import create_app
 from app.core.database import init_db
+
+# Create app instance for testing
+app = create_app(enable_lifespan=False)
 
 
 @pytest.fixture
