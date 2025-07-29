@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from app.core.database import DatabaseManager
 from app.core.config import settings
 from app.models.schemas import LinkCreate, LinkUpdate, LinkResponse, AnalyticsResponse
-from app.services.word_generator import WordCodeGenerator
+from app.services.generator import WordCodeGenerator
 
 
 class LinkService:

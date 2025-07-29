@@ -69,8 +69,8 @@ def create_app(enable_lifespan=True):
     )
 
     # Include routers
-    from app.api import links_router, system_router, redirect_router
-    app.include_router(system_router, tags=["System"])
+    from app.api import links_router, health_router, redirect_router
+    app.include_router(health_router, tags=["Health"])
     app.include_router(links_router, tags=["Links"])
     app.include_router(redirect_router, tags=["Redirects"])
 

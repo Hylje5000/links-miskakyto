@@ -19,6 +19,9 @@ class DatabaseSettings(BaseModel):
 class SecuritySettings(BaseModel):
     """Simple security configuration."""
     allowed_origins: List[str] = ["http://localhost:3000"]
+    # Azure Entra ID settings
+    azure_tenant_id: Optional[str] = None
+    azure_client_id: Optional[str] = None
 
 
 class LoggingSettings(BaseModel):
@@ -59,7 +62,9 @@ class Settings(BaseModel):
                 url=os.getenv("DATABASE_URL", "sqlite:///./links.db")
             ),
             security=SecuritySettings(
-                allowed_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+                allowed_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
+                azure_tenant_id=os.getenv("AZURE_TENANT_ID"),
+                azure_client_id=os.getenv("AZURE_CLIENT_ID")
             ),
             logging=LoggingSettings(
                 level=os.getenv("LOG_LEVEL", "INFO")

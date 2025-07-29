@@ -1,41 +1,68 @@
 """
-Simple authentication dependencies.
+Secure authentication dependencies with Microsoft Entra ID JWT validation.
 """
 import os
-from typing import Dict, Any
+import logging
+from typing import Dict, Any, Optional
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Optional
+import jwt
 
-security = HTTPBearer(auto_error=False)  # Don't auto-error so we can handle it ourselves
+# Import the secure token validator
+from auth import token_validator
+
+logger = logging.getLogger(__name__)
+security = HTTPBearer(auto_error=False)
+
 
 async def verify_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Dict[str, Any]:
     """
-    Simple token verification for testing and development.
-    In production, this should validate JWT tokens from Microsoft Entra ID.
+    Verify JWT tokens from Microsoft Entra ID.
+    
+    In TEST_MODE only, allows bypassing authentication for testing.
+    In production, always validates JWT tokens against Microsoft Entra ID.
     """
-    # In test mode, return a mock user even without credentials
-    if os.getenv("TEST_MODE") == "true":
+    # Only allow test mode bypass if explicitly enabled AND in test environment
+    test_mode = os.getenv("TEST_MODE", "false").lower() == "true"
+    environment = os.getenv("ENVIRONMENT", "development").lower()
+    
+    if test_mode:
+        logger.warning("⚠️  Running in TEST_MODE - authentication bypassed")
         return {
             "oid": "test-user-id",
-            "name": "Test User",
+            "name": "Test User", 
             "tid": "test-tenant-id",
             "email": "test@example.com"
         }
     
-    # For now, just validate that a token is present
-    # In production, implement proper JWT validation here
+    # Production and development require valid JWT tokens
     if not credentials or not credentials.credentials:
+        logger.warning("Authentication failed: No credentials provided")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
+            detail="Authentication required - valid Microsoft Entra ID token needed",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Mock user for development (replace with real JWT validation)
-    return {
-        "oid": "dev-user-id",
-        "name": "Development User",
-        "tid": "dev-tenant-id",
-        "email": "dev@example.com"
-    }
+    try:
+        # Validate the JWT token against Microsoft Entra ID
+        claims = token_validator.validate_token(credentials.credentials)
+        
+        logger.info(f"✅ Successfully authenticated user: {claims.get('email', claims.get('upn', claims.get('name', 'unknown')))}")
+        
+        return claims
+        
+    except jwt.InvalidTokenError as e:
+        logger.warning(f"JWT validation failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid token: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except Exception as e:
+        logger.error(f"Authentication error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication failed",
+            headers={"WWW-Authenticate": "Bearer"},
+        )

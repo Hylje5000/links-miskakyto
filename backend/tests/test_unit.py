@@ -7,7 +7,7 @@ os.environ["TEST_MODE"] = "true"
 os.environ["AZURE_TENANT_ID"] = "test-tenant"
 os.environ["AZURE_CLIENT_ID"] = "test-client"
 
-from app.services.link_service import LinkService
+from app.services.service import LinkService
 from app.models.schemas import LinkCreate, LinkUpdate
 from app.core.database import DatabaseManager
 
@@ -133,7 +133,7 @@ class TestWordGenerator:
 
     def test_generate_word_code(self):
         """Test word-based code generation."""
-        from app.services.word_generator import WordCodeGenerator
+        from app.services.generator import WordCodeGenerator
         
         code = WordCodeGenerator.generate_word_code()
         assert isinstance(code, str)
@@ -147,7 +147,7 @@ class TestWordGenerator:
 
     def test_generate_numbered_code(self):
         """Test numbered word-based code generation."""
-        from app.services.word_generator import WordCodeGenerator
+        from app.services.generator import WordCodeGenerator
         
         code = WordCodeGenerator.generate_numbered_code()
         assert isinstance(code, str)
@@ -157,7 +157,7 @@ class TestWordGenerator:
 
     def test_appropriateness_check(self):
         """Test the appropriateness filter."""
-        from app.services.word_generator import WordCodeGenerator
+        from app.services.generator import WordCodeGenerator
         
         # Test appropriate codes
         assert WordCodeGenerator.is_appropriate("happycat") == True

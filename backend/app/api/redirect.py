@@ -4,7 +4,7 @@ Redirect routes for short codes.
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
-from app.services.link_service import LinkService
+from app.services.service import LinkService
 
 
 def get_client_ip(request: Request) -> str:

@@ -5,7 +5,7 @@ from typing import List
 from fastapi import APIRouter, Depends
 
 from app.models.schemas import LinkCreate, LinkUpdate, LinkResponse, AnalyticsResponse
-from app.services.link_service import LinkService
+from app.services.service import LinkService
 from app.core.dependencies import verify_token
 
 router = APIRouter(prefix="/api/links", tags=["links"])
