@@ -29,7 +29,7 @@ echo "📋 Pulling latest code..."
 git pull origin main || echo "⚠️ Git pull failed - continuing with current files"
 
 # Rebuild containers with no cache to ensure clean build
-echo "📋 Rebuilding containers..."
+echo "📋 Rebuilding containers with production environment..."
 docker-compose -f docker/docker-compose.fullstack.yml build --no-cache backend
 
 # Start containers

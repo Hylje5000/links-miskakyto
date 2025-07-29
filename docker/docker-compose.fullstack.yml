@@ -37,7 +37,9 @@ services:
       cache_from:
         - linkshortener-linkshortener-backend:latest
     environment:
+      - ENVIRONMENT=production
       - PRODUCTION=true
+      - DEBUG=false
       - BASE_URL=https://links.miskakyto.fi
       - ALLOWED_ORIGINS=https://links.miskakyto.fi
       - AZURE_TENANT_ID=${AZURE_TENANT_ID}

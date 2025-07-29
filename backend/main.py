@@ -15,16 +15,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Simple configuration
-class Settings:
-    app_name = "Link Shortener API"
-    version = "1.0.0"
-    debug = os.getenv("DEBUG", "false").lower() == "true"
-    docs_enabled = True
-    base_url = os.getenv("BASE_URL", "http://localhost:3000")
-    environment = os.getenv("ENVIRONMENT", "development")
-
-settings = Settings()
+# Import proper settings
+from app.core.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -72,7 +64,7 @@ def create_app(enable_lifespan=True):
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+        allow_origins=settings.security.allowed_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["*"],

@@ -48,15 +48,17 @@ This ensures your application will start successfully even if:
 
 After the fix, you should see logs like:
 ```
-✅ Alembic database initialization successful
-```
-OR (if using fallback):
-```
-⚠️ Alembic failed (...), using fallback database initialization...
-✅ Fallback database initialization successful
+🚀 Starting Link Shortener API v1.0.0
+Environment: production
+Debug mode: False
+✅ Database initialized successfully
 ```
 
-Both outcomes result in a working application.
+The health endpoint should also show:
+```bash
+curl http://localhost:8080/api/health
+# Should return: {"status":"healthy",...,"environment":"production"}
+```
 
 ## Verification Commands
 
