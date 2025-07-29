@@ -70,10 +70,14 @@ def create_app(enable_lifespan=True):
         allow_headers=["*"],
     )
 
-    # Include routers
+    # Include routers - ORDER MATTERS!
     from app.api import links_router, health_router, redirect_router
-    app.include_router(health_router, tags=["Health"])
+    
+    # API routes first (most specific)
     app.include_router(links_router, tags=["Links"])
+    app.include_router(health_router, tags=["Health"])
+    
+    # Redirect router LAST (catches all remaining /{short_code} routes)
     app.include_router(redirect_router, tags=["Redirects"])
 
     return app
