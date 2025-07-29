@@ -28,6 +28,26 @@ print_success() { echo -e "${GREEN}$1${NC}"; }
 print_info() { echo -e "${BLUE}$1${NC}"; }
 print_error() { echo -e "${RED}$1${NC}"; }
 
+# Run pre-deployment validation if backend changes detected
+print_status "🔍 Checking for backend changes..."
+BACKEND_CHANGED=false
+if git diff --quiet $LAST_COMMIT $CURRENT_COMMIT -- backend/ 2>/dev/null; then
+    print_info "📝 No backend changes detected"
+else
+    print_info "📝 Backend changes detected - running migration validation..."
+    BACKEND_CHANGED=true
+    
+    # Run migration validation
+    if [ -f "scripts/validate-migrations.sh" ]; then
+        if ! ./scripts/validate-migrations.sh; then
+            print_error "❌ Migration validation failed - deployment aborted"
+            exit 1
+        fi
+    else
+        print_error "⚠️ Migration validation script not found - proceeding without validation"
+    fi
+fi
+
 # Get the last deployment commit (or use last 1 commit if file doesn't exist)
 LAST_DEPLOYMENT_FILE="$HOME/.linkshortener_last_deployment"
 if [ -f "$LAST_DEPLOYMENT_FILE" ]; then

@@ -35,12 +35,29 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.12'
     
     - name: Install Python dependencies
       run: |
         cd backend
         pip install -r requirements.txt
+    
+    - name: Test Alembic migrations
+      run: |
+        cd backend
+        # Test that Alembic can initialize and run migrations
+        export AZURE_TENANT_ID=test-tenant
+        export AZURE_CLIENT_ID=test-client
+        export DATABASE_URL=sqlite:///test.db
+        export ENVIRONMENT=test
+        python -c "
+        import asyncio
+        from app.core.database import init_db
+        async def test():
+            await init_db()
+            print('✅ Alembic migrations test passed')
+        asyncio.run(test())
+        "
     
     - name: Run backend tests
       run: |
