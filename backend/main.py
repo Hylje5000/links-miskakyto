@@ -30,19 +30,29 @@ settings = Settings()
 async def lifespan(app: FastAPI):
     """Simple application startup and shutdown."""
     logger.info(f"🚀 Starting {settings.app_name} v{settings.version}")
+    logger.info(f"Environment: {settings.environment}")
+    logger.info(f"Debug mode: {settings.debug}")
     
     try:
         # Initialize database
         from app.core.database import init_db
+        logger.info("🔧 Initializing database...")
         await init_db()
-        logger.info("✅ Database initialized")
+        logger.info("✅ Database initialized successfully")
         logger.info("🎉 Application started successfully!")
         
         yield
         
     except Exception as e:
         logger.error(f"❌ Failed to start application: {e}", exc_info=True)
-        raise
+        # Don't re-raise the exception in production - use fallback instead
+        if settings.environment != "production":
+            raise
+        else:
+            logger.error("🚨 Production startup failed - this should trigger container restart")
+            # In production, we want the container to restart rather than hang
+            import sys
+            sys.exit(1)
     finally:
         logger.info("👋 Application shutdown complete")
 

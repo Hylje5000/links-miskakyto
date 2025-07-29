@@ -28,20 +28,103 @@ def get_db_path() -> str:
 
 
 async def init_db() -> None:
-    """Initialize the database with Alembic migration support."""
+    """Initialize the database with Alembic migration support and fallback."""
     db_path = get_db_path()
     
-    # Use Alembic for database initialization and migrations
-    success = safe_database_startup_alembic(f"sqlite:///{db_path}")
-    
-    if not success:
-        print("❌ Database initialization failed! Check logs for details.")
-        raise RuntimeError("Database initialization failed")
+    # Try Alembic first
+    try:
+        success = safe_database_startup_alembic(f"sqlite:///{db_path}")
+        if success:
+            print("✅ Alembic database initialization successful")
+        else:
+            raise Exception("Alembic initialization returned False")
+    except Exception as e:
+        print(f"⚠️ Alembic failed ({e}), using fallback database initialization...")
+        
+        # Fallback to simple database creation
+        await _create_database_fallback(db_path)
+        print("✅ Fallback database initialization successful")
     
     # Ensure database optimizations are applied
     async with aiosqlite.connect(db_path) as db:
         await _ensure_performance_optimizations(db)
         await db.commit()
+
+
+async def _create_database_fallback(db_path: str) -> None:
+    """Create database with basic schema as fallback when Alembic fails."""
+    import sqlite3
+    
+    # Ensure data directory exists
+    db_dir = os.path.dirname(db_path)
+    if db_dir and not os.path.exists(db_dir):
+        os.makedirs(db_dir, exist_ok=True)
+    
+    # Create database with simple schema
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    try:
+        # Create tables with the same schema as Alembic migration
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS links (
+            id TEXT PRIMARY KEY,
+            original_url TEXT NOT NULL,
+            short_code TEXT UNIQUE NOT NULL,
+            description TEXT,
+            click_count INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            created_by TEXT NOT NULL,
+            created_by_name TEXT NOT NULL,
+            tenant_id TEXT NOT NULL
+        )
+        ''')
+        
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS clicks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            link_id TEXT NOT NULL,
+            clicked_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            ip_address TEXT,
+            user_agent TEXT,
+            FOREIGN KEY (link_id) REFERENCES links (id) ON DELETE CASCADE
+        )
+        ''')
+        
+        # Create indexes for performance
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_links_short_code ON links(short_code)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_links_tenant_id ON links(tenant_id)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_clicks_link_id ON clicks(link_id)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_clicks_clicked_at ON clicks(clicked_at)')
+        
+        # Create a simple version tracking table to indicate this was created by fallback
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS _database_info (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        ''')
+        
+        # Insert version info
+        cursor.execute('''
+        INSERT OR REPLACE INTO _database_info (key, value) 
+        VALUES ('schema_version', 'fallback_v1.0')
+        ''')
+        
+        cursor.execute('''
+        INSERT OR REPLACE INTO _database_info (key, value) 
+        VALUES ('created_by', 'fallback_initialization')
+        ''')
+        
+        conn.commit()
+        print("📊 Database schema created successfully with fallback method")
+        
+    except Exception as schema_error:
+        print(f"❌ Failed to create database schema: {schema_error}")
+        raise
+    finally:
+        conn.close()
 
 
 async def _ensure_performance_optimizations(db: aiosqlite.Connection) -> None:

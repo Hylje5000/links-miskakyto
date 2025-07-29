@@ -25,13 +25,20 @@ class AlembicManager:
         current_dir = Path(__file__).parent.parent.parent  # Go up from app/core/ to backend/
         alembic_ini_path = current_dir / "alembic.ini"
         
+        # Check if alembic.ini exists, if not, we'll use fallback
         if not alembic_ini_path.exists():
+            logger.warning(f"⚠️ Alembic configuration not found at {alembic_ini_path}")
+            logger.warning("This will trigger fallback database initialization")
             raise FileNotFoundError(f"Alembic configuration not found at {alembic_ini_path}")
         
-        self.alembic_cfg = Config(str(alembic_ini_path))
-        # Override the database URL if provided
-        if db_url:
-            self.alembic_cfg.set_main_option("sqlalchemy.url", db_url)
+        try:
+            self.alembic_cfg = Config(str(alembic_ini_path))
+            # Override the database URL if provided
+            if db_url:
+                self.alembic_cfg.set_main_option("sqlalchemy.url", db_url)
+        except Exception as e:
+            logger.error(f"❌ Failed to load Alembic configuration: {e}")
+            raise
     
     def upgrade_to_head(self) -> bool:
         """
@@ -188,6 +195,7 @@ def safe_database_startup_alembic(db_url: Optional[str] = None) -> bool:
             # Apply migrations
             success = alembic_manager.upgrade_to_head()
             if not success:
+                logger.error("❌ Migration upgrade failed")
                 return False
         
         # Final validation
@@ -203,8 +211,15 @@ def safe_database_startup_alembic(db_url: Optional[str] = None) -> bool:
                 logger.error(f"   - {issue}")
             return False
             
+    except FileNotFoundError as e:
+        logger.error(f"❌ Alembic configuration missing: {e}")
+        logger.info("This will trigger fallback database initialization")
+        return False
     except Exception as e:
         logger.error(f"❌ Alembic database initialization failed: {e}")
+        logger.info("This will trigger fallback database initialization")
+        import traceback
+        logger.debug(f"Full traceback: {traceback.format_exc()}")
         return False
 
 

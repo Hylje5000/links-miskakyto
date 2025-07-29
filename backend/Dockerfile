@@ -32,6 +32,15 @@ RUN mkdir -p /app/data
 RUN if [ -f alembic.ini ]; then \
     sed -i 's|sqlalchemy.url = sqlite:///./links.db|sqlalchemy.url = sqlite:///data/links.db|g' alembic.ini; \
     echo "✅ alembic.ini configured for container environment"; \
+    else \
+    echo "⚠️ alembic.ini not found - fallback database initialization will be used"; \
+    fi
+
+# Check if Alembic migration files exist
+RUN if [ -d alembic/versions ] && [ "$(ls -A alembic/versions)" ]; then \
+    echo "✅ Alembic migration files found"; \
+    else \
+    echo "⚠️ Alembic migration files missing - fallback database initialization will be used"; \
     fi
 
 # Expose port
