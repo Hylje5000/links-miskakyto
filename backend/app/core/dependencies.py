@@ -8,11 +8,21 @@ from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 
-# Import the secure token validator
-from auth import token_validator
-
 logger = logging.getLogger(__name__)
 security = HTTPBearer(auto_error=False)
+
+# Import the secure token validator with error handling
+try:
+    from auth import token_validator
+    TOKEN_VALIDATOR_AVAILABLE = True
+    logger.info("✅ Token validator imported successfully")
+except ImportError as e:
+    TOKEN_VALIDATOR_AVAILABLE = False
+    logger.error(f"❌ Failed to import token validator: {e}")
+    logger.error("   This will cause authentication to fail in production!")
+except Exception as e:
+    TOKEN_VALIDATOR_AVAILABLE = False
+    logger.error(f"❌ Unexpected error importing token validator: {e}")
 
 
 async def verify_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Dict[str, Any]:
