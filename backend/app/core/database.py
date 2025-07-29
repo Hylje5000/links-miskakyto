@@ -146,8 +146,9 @@ class DatabaseManager:
 
     @staticmethod
     async def get_link_by_short_code(short_code: str) -> Optional[Dict[str, Any]]:
-        """Get a link by its short code."""
+        """Get a link by its short code (case-insensitive)."""
         async with aiosqlite.connect(get_db_path()) as db:
+            # Try exact match first (for backward compatibility)
             cursor = await db.execute("""
                 SELECT * FROM links WHERE short_code = ?
             """, (short_code,))
@@ -156,6 +157,17 @@ class DatabaseManager:
             if row:
                 columns = [description[0] for description in cursor.description]
                 return dict(zip(columns, row))
+            
+            # If no exact match, try case-insensitive match
+            cursor = await db.execute("""
+                SELECT * FROM links WHERE LOWER(short_code) = LOWER(?)
+            """, (short_code,))
+            
+            row = await cursor.fetchone()
+            if row:
+                columns = [description[0] for description in cursor.description]
+                return dict(zip(columns, row))
+            
             return None
 
     @staticmethod

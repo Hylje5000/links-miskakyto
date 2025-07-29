@@ -35,20 +35,26 @@ router = APIRouter(tags=["redirect"])
 @router.get("/{short_code}")
 async def redirect_to_original(short_code: str, request: Request):
     """Redirect to the original URL using the short code."""
-    # Debug logging
-    print(f"🔍 Redirect request for short_code: '{short_code}'")
+    # Debug logging for specific cases
+    if short_code in ["MVP", "MVPfoob"]:
+        print(f"🔍 DEBUG: Redirect request for '{short_code}'")
+        print(f"🔍 DEBUG: Request URL: {request.url}")
+        print(f"🔍 DEBUG: Request path: {request.url.path}")
+        print(f"🔍 DEBUG: Headers: {dict(request.headers)}")
     
     # Get client IP and user agent for analytics
     client_ip = get_client_ip(request)
     user_agent = request.headers.get("user-agent", "unknown")
     
-    print(f"🔍 Client IP: {client_ip}, User Agent: {user_agent[:50]}...")
-    
     try:
         # Get original URL and track click
         original_url = await LinkService.redirect_to_original(short_code, client_ip, user_agent)
-        print(f"✅ Redirecting '{short_code}' to: {original_url}")
+        
+        if short_code in ["MVP", "MVPfoob"]:
+            print(f"✅ DEBUG: Found '{short_code}' -> {original_url}")
+        
         return RedirectResponse(url=original_url, status_code=302)
     except Exception as e:
-        print(f"❌ Redirect failed for '{short_code}': {e}")
+        if short_code in ["MVP", "MVPfoob"]:
+            print(f"❌ DEBUG: Redirect failed for '{short_code}': {e}")
         raise
