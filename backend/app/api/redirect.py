@@ -1,6 +1,7 @@
 """
 Redirect routes for short codes.
 """
+import os
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
@@ -31,12 +32,15 @@ def get_client_ip(request: Request) -> str:
 
 router = APIRouter(tags=["redirect"])
 
+# Optional debugging for specific short codes via env var
+DEBUG_CODES = {c.strip() for c in os.getenv("DEBUG_REDIRECT_CODES", "").split(",") if c.strip()}
+
 
 @router.get("/{short_code}")
 async def redirect_to_original(short_code: str, request: Request):
     """Redirect to the original URL using the short code."""
-    # Debug logging for specific cases
-    if short_code in ["MVP", "MVPfoob"]:
+    # Debug logging for configured short codes
+    if short_code in DEBUG_CODES:
         print(f"🔍 DEBUG: Redirect request for '{short_code}'")
         print(f"🔍 DEBUG: Request URL: {request.url}")
         print(f"🔍 DEBUG: Request path: {request.url.path}")
@@ -50,11 +54,11 @@ async def redirect_to_original(short_code: str, request: Request):
         # Get original URL and track click
         original_url = await LinkService.redirect_to_original(short_code, client_ip, user_agent)
         
-        if short_code in ["MVP", "MVPfoob"]:
+        if short_code in DEBUG_CODES:
             print(f"✅ DEBUG: Found '{short_code}' -> {original_url}")
         
         return RedirectResponse(url=original_url, status_code=302)
     except Exception as e:
-        if short_code in ["MVP", "MVPfoob"]:
+        if short_code in DEBUG_CODES:
             print(f"❌ DEBUG: Redirect failed for '{short_code}': {e}")
         raise
