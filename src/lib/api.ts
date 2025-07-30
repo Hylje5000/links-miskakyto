@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { isTestMode, testModeConfig } from './testConfig';
+import { isTestMode } from './testConfig';
+import { PublicClientApplication } from '@azure/msal-browser';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -10,10 +11,10 @@ export const api = axios.create({
   },
 });
 
-// Store MSAL instance for token retrieval
-let msalInstance: any = null;
+// Store MSAL instance for token retrieval  
+let msalInstance: PublicClientApplication | null = null;
 
-export const setMsalInstance = (instance: any) => {
+export const setMsalInstance = (instance: PublicClientApplication) => {
   msalInstance = instance;
 };
 
@@ -35,7 +36,6 @@ api.interceptors.request.use(async (config) => {
           const response = await msalInstance.acquireTokenSilent({
             scopes: ['openid'], // Only request openid scope for ID token
             account: account,
-            forceRefresh: false
           });
           
           if (response.idToken) {
@@ -43,14 +43,13 @@ api.interceptors.request.use(async (config) => {
             config.headers.Authorization = `Bearer ${response.idToken}`;
             return config;
           }
-        } catch (tokenError: any) {
+        } catch (tokenError: unknown) {
           // Try interactive token acquisition if silent fails
-          if (tokenError.errorCode === 'consent_required' || 
-              tokenError.errorCode === 'interaction_required') {
+          if ((tokenError as { errorCode?: string })?.errorCode === 'consent_required' || 
+              (tokenError as { errorCode?: string })?.errorCode === 'interaction_required') {
             try {
               const interactiveResponse = await msalInstance.acquireTokenPopup({
                 scopes: ['openid'], // Only openid scope for ID token
-                account: accounts[0],
               });
               if (interactiveResponse.idToken) {
                 config.headers.Authorization = `Bearer ${interactiveResponse.idToken}`;

@@ -20,7 +20,6 @@ export function LinkDashboard() {
   const queryClient = useQueryClient();
 
   // No need to manually store tokens - the API interceptor handles ID token acquisition
-  const { instance } = useMsal();
 
   const { data: links = [], isLoading } = useQuery({
     queryKey: ['links'],

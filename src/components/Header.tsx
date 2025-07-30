@@ -39,8 +39,8 @@ export function Header() {
               <User className="h-4 w-4" />
               <span>
                 {isTestMode 
-                  ? (account as any)?.name || (account as any)?.email 
-                  : (account as any)?.name || (account as any)?.username
+                  ? (account as { name?: string; email?: string })?.name || (account as { name?: string; email?: string })?.email 
+                  : (account as { name?: string; username?: string })?.name || (account as { name?: string; username?: string })?.username
                 }
               </span>
             </div>
