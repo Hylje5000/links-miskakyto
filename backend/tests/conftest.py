@@ -11,7 +11,9 @@ import tempfile
 # Set test mode before importing the app
 os.environ["TEST_MODE"] = "true"
 # Use a temp file for test database instead of in-memory to persist across connections
-test_db_path = tempfile.mktemp(suffix=".db")
+_temp_db = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+test_db_path = _temp_db.name
+_temp_db.close()
 os.environ["DATABASE_URL"] = f"sqlite:///{test_db_path}"
 
 from main import create_app

@@ -64,8 +64,14 @@ api.interceptors.request.use(async (config) => {
       }
     } catch (error) {
       console.error('Error in token acquisition:', error);
+      return Promise.reject(error);
     }
   }
+
+  if (!config.headers.Authorization && !isTestMode) {
+    return Promise.reject(new Error('No auth token available'));
+  }
+
   return config;
 });
 
