@@ -100,9 +100,14 @@ export type Link = {
 
 export type Analytics = {
   link_id: string;
-  click_count: number;
+  total_clicks: number;
+  clicks_today: number;
+  clicks_this_week: number;
+  clicks_this_month: number;
   recent_clicks: Array<{
+    id?: string;
     clicked_at: string;
     ip_address: string;
+    user_agent?: string;
   }>;
 };
