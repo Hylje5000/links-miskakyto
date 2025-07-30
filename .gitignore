@@ -55,6 +55,10 @@ venv/
 .venv/
 ENV/
 
+# Alembic migration files (auto-generated)
+backend/alembic/versions/*.py
+!backend/alembic/versions/__init__.py
+
 # Database files
 *.db
 *.sqlite
