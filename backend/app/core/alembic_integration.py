@@ -187,8 +187,27 @@ def safe_database_startup_alembic(db_url: Optional[str] = None) -> bool:
                     backup_file = f"{db_file}.backup_{int(__import__('time').time())}"
                     try:
                         import shutil
+                        import glob
+                        
+                        # Create new backup
                         shutil.copy2(db_file, backup_file)
                         logger.info(f"📦 Database backup created: {backup_file}")
+                        
+                        # Clean up old backups - keep only the 5 most recent
+                        backup_pattern = f"{db_file}.backup_*"
+                        backup_files = glob.glob(backup_pattern)
+                        backup_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+                        
+                        # Remove old backups beyond the limit
+                        BACKUP_LIMIT = 5
+                        if len(backup_files) > BACKUP_LIMIT:
+                            for old_backup in backup_files[BACKUP_LIMIT:]:
+                                try:
+                                    os.remove(old_backup)
+                                    logger.info(f"🗑️  Removed old backup: {os.path.basename(old_backup)}")
+                                except Exception as cleanup_error:
+                                    logger.warning(f"⚠️  Could not remove old backup {old_backup}: {cleanup_error}")
+                        
                     except Exception as e:
                         logger.warning(f"⚠️  Could not create backup: {e}")
             

@@ -64,6 +64,11 @@ backend/alembic/versions/*.py
 *.sqlite
 *.sqlite3
 
+# Database backup files
+*.db.backup_*
+*.sqlite.backup_*
+*.sqlite3.backup_*
+
 # Test coverage
 htmlcov/
 .coverage

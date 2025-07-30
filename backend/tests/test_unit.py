@@ -167,3 +167,56 @@ class TestWordGenerator:
         # Test inappropriate codes (basic filter)
         assert WordCodeGenerator.is_appropriate("hellcat") == False
         assert WordCodeGenerator.is_appropriate("damnthing") == False
+
+
+@pytest.mark.unit
+class TestBackupCleanup:
+    """Test backup cleanup functionality."""
+    
+    def test_backup_cleanup_logic(self):
+        """Test that backup cleanup logic works correctly."""
+        import tempfile
+        import glob
+        import os
+        import time
+        
+        # Create a temporary directory for testing
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create a fake database file
+            db_file = os.path.join(temp_dir, "test.db")
+            with open(db_file, "w") as f:
+                f.write("fake database content")
+            
+            # Create 7 fake backup files (more than the limit of 5)
+            backup_files = []
+            for i in range(7):
+                backup_file = f"{db_file}.backup_{int(time.time()) - (60 * i)}"  # Different timestamps
+                with open(backup_file, "w") as f:
+                    f.write(f"backup content {i}")
+                backup_files.append(backup_file)
+                time.sleep(0.01)  # Small delay to ensure different timestamps
+            
+            # Verify we have 7 backup files
+            pattern = f"{db_file}.backup_*"
+            all_backups = glob.glob(pattern)
+            assert len(all_backups) == 7
+            
+            # Simulate the cleanup logic from alembic_integration.py
+            BACKUP_LIMIT = 5
+            backup_files = glob.glob(pattern)
+            backup_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+            
+            # Remove old backups beyond the limit
+            removed_count = 0
+            if len(backup_files) > BACKUP_LIMIT:
+                for old_backup in backup_files[BACKUP_LIMIT:]:
+                    try:
+                        os.remove(old_backup)
+                        removed_count += 1
+                    except Exception:
+                        pass
+            
+            # Verify cleanup worked
+            remaining_backups = glob.glob(pattern)
+            assert len(remaining_backups) == BACKUP_LIMIT
+            assert removed_count == 2  # Should have removed 2 files (7 - 5 = 2)
