@@ -11,7 +11,7 @@ interface AnalyticsProps {
 }
 
 export function Analytics({ linkId, links, onSelectLink }: AnalyticsProps) {
-  const { data: analytics, isLoading } = useQuery({
+  const { data: analytics, isLoading } = useQuery<AnalyticsType | null>({
     queryKey: ['analytics', linkId],
     queryFn: async () => {
       if (!linkId) return null;
@@ -109,7 +109,7 @@ export function Analytics({ linkId, links, onSelectLink }: AnalyticsProps) {
                 <span className="text-sm font-medium text-blue-900">Total Clicks</span>
               </div>
               <div className="mt-2">
-                <span className="text-2xl font-bold text-blue-900">{analytics.click_count}</span>
+                <span className="text-2xl font-bold text-blue-900">{analytics.total_clicks}</span>
               </div>
             </div>
 
