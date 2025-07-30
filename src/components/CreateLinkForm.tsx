@@ -20,9 +20,16 @@ export function CreateLinkForm({ onSubmit, isLoading }: CreateLinkFormProps) {
     
     if (!originalUrl.trim()) return;
     
+    // Validate custom short code if provided
+    const trimmedCode = customCode.trim();
+    if (trimmedCode && trimmedCode.length < 3) {
+      alert('Custom short code must be at least 3 characters long');
+      return;
+    }
+    
     const data = {
       original_url: originalUrl.trim(),
-      custom_short_code: customCode.trim() || undefined,
+      custom_short_code: trimmedCode || undefined,
       description: description.trim() || undefined,
     };
     
@@ -74,11 +81,13 @@ export function CreateLinkForm({ onSubmit, isLoading }: CreateLinkFormProps) {
             onChange={(e) => setCustomCode(e.target.value)}
             placeholder="my-custom-link"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            pattern="[a-zA-Z0-9\-_]+"
-            title="Only letters, numbers, hyphens, and underscores are allowed"
+            pattern="[a-zA-Z0-9\-_]{3,20}"
+            title="Must be 3-20 characters long. Only letters, numbers, hyphens, and underscores are allowed"
+            minLength={3}
+            maxLength={20}
           />
           <p className="text-xs text-gray-500 mt-1">
-            Leave empty to generate automatically
+            Leave empty to generate automatically. Must be at least 3 characters if provided.
           </p>
         </div>
 
