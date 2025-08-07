@@ -10,6 +10,8 @@ import tempfile
 
 # Set test mode before importing the app
 os.environ["TEST_MODE"] = "true"
+os.environ["AZURE_TENANT_ID"] = "test-tenant"
+os.environ["AZURE_CLIENT_ID"] = "test-client"
 # Use a temp file for test database instead of in-memory to persist across connections
 _temp_db = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
 test_db_path = _temp_db.name
