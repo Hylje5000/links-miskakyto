@@ -1,9 +1,7 @@
-"""Simple Pydantic models for Link Shortener API."""
-
-import re
-
-import validators
-from pydantic import BaseModel, field_validator
+"""
+Simple Pydantic models for Link Shortener API.
+"""
+from pydantic import BaseModel, HttpUrl, field_validator
 from typing import Optional, List, Union
 from datetime import datetime
 
@@ -13,28 +11,6 @@ class LinkCreate(BaseModel):
     original_url: str
     description: Optional[str] = None
     custom_short_code: Optional[str] = None
-
-    @field_validator("original_url", mode="before")
-    @classmethod
-    def validate_original_url(cls, v: str) -> str:
-        """Trim and validate the original URL."""
-        url = v.strip()
-        if not validators.url(url):
-            raise ValueError("Invalid URL format")
-        return url
-
-    @field_validator("custom_short_code", mode="before")
-    @classmethod
-    def validate_custom_short_code(cls, v: Optional[str]) -> Optional[str]:
-        """Validate custom short code format and length."""
-        if v is None:
-            return v
-        code = v.strip()
-        if not re.fullmatch(r"[A-Za-z0-9\-_]{3,20}", code):
-            raise ValueError(
-                "Custom short code must be 3-20 characters long and contain only letters, numbers, hyphens, or underscores",
-            )
-        return code
 
 
 class LinkUpdate(BaseModel):
