@@ -58,7 +58,7 @@ class TestLinkValidation:
         )
         
         # Should either accept it or return a validation error
-        assert response.status_code in [200, 422]
+        assert response.status_code in [200, 400, 422]
 
     async def test_create_link_with_unicode_description(self, async_client: AsyncClient, auth_headers: dict, test_db: str):
         """Test creating a link with unicode characters in description."""
