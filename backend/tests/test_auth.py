@@ -52,9 +52,9 @@ class TestErrorHandling:
             headers=auth_headers
         )
         
-        assert response.status_code == 400
+        assert response.status_code == 422
         response_data = response.json()
-        assert "invalid" in response_data["detail"].lower() or "url" in response_data["detail"].lower()
+        assert "Invalid URL" in response_data["detail"][0]["msg"]
 
     async def test_create_link_duplicate_custom_code(self, async_client: AsyncClient, auth_headers: dict, test_db: str):
         """Test creating links with duplicate custom short codes."""

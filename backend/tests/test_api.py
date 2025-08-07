@@ -67,8 +67,8 @@ class TestAPI:
             headers=auth_headers
         )
         
-        assert response.status_code == 400
-        assert "Invalid URL" in response.json()["detail"]
+        assert response.status_code == 422
+        assert "Invalid URL" in response.json()["detail"][0]["msg"]
 
     async def test_get_links(self, async_client: AsyncClient, auth_headers: dict, test_db: str):
         """Test getting all links for a user."""

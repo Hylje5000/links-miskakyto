@@ -229,9 +229,9 @@ class TestRefactoredAPI:
             json=link_data,
             headers=auth_headers
         )
-        assert response.status_code == 400
+        assert response.status_code == 422
         data = response.json()
-        assert "Invalid URL format" in data["detail"]
+        assert "Invalid URL format" in data["detail"][0]["msg"]
 
     def test_auth_required(self, client: TestClient):
         """Test that authentication is required for protected endpoints."""
