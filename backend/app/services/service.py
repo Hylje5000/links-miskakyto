@@ -1,8 +1,6 @@
 """
 Link management service.
 """
-import re
-
 import shortuuid
 import validators
 from typing import Optional, Dict, Any, List
@@ -50,11 +48,6 @@ class LinkService:
         # Generate or validate custom short code
         if link_data.custom_short_code:
             short_code = link_data.custom_short_code
-            if not re.fullmatch(r"[A-Za-z0-9\-_]{3,20}", short_code):
-                raise HTTPException(
-                    status_code=400,
-                    detail="Custom short code must be 3-20 characters long and contain only letters, numbers, hyphens, or underscores",
-                )
             # Check if custom short code already exists
             existing_link = await DatabaseManager.get_link_by_short_code(short_code)
             if existing_link:

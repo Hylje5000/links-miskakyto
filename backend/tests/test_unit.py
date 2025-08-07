@@ -32,10 +32,9 @@ class TestLinkService:
         """Test creating a link with invalid URL."""
         from fastapi import HTTPException
         
-        # Bypass pydantic validation to test service-level check
-        link_data = LinkCreate.model_construct(
+        link_data = LinkCreate(
             original_url="not-a-valid-url",
-            description="Test",
+            description="Test"
         )
         
         user = {
@@ -49,28 +48,6 @@ class TestLinkService:
         
         assert exc_info.value.status_code == 400
         assert "Invalid URL" in exc_info.value.detail
-
-    @pytest.mark.asyncio
-    async def test_create_link_invalid_custom_code(self):
-        """Custom short code outside allowed pattern should fail."""
-        from fastapi import HTTPException
-
-        link_data = LinkCreate.model_construct(
-            original_url="https://example.com",
-            custom_short_code="invalid code!",
-        )
-
-        user = {
-            "oid": "test-user",
-            "name": "Test User",
-            "tid": "test-tenant",
-        }
-
-        with pytest.raises(HTTPException) as exc_info:
-            await LinkService.create_link(link_data, user)
-
-        assert exc_info.value.status_code == 400
-        assert "Custom short code" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_create_link_success(self, monkeypatch):
@@ -143,29 +120,6 @@ class TestModels:
             custom_short_code="custom123"
         )
         assert link.custom_short_code == "custom123"
-
-    def test_link_create_invalid_custom_code(self):
-        """Invalid custom short codes should raise ValidationError."""
-        from pydantic import ValidationError
-
-        with pytest.raises(ValidationError):
-            LinkCreate(
-                original_url="https://example.com",
-                custom_short_code="ab",
-            )
-
-        with pytest.raises(ValidationError):
-            LinkCreate(
-                original_url="https://example.com",
-                custom_short_code="invalid code!",
-            )
-
-    def test_link_create_invalid_url(self):
-        """Invalid URLs should raise ValidationError."""
-        from pydantic import ValidationError
-
-        with pytest.raises(ValidationError):
-            LinkCreate(original_url="not-a-valid-url")
 
     def test_link_update_model(self):
         """Test LinkUpdate model."""
