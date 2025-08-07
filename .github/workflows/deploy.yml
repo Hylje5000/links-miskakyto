@@ -1,11 +1,9 @@
 name: Deploy to Azure VM
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-    types: [ closed ]
+  workflow_run:
+    workflows: ["Test Suite"]
+    types: [completed]
 
 env:
   VM_HOST: 4.210.156.244
@@ -13,62 +11,10 @@ env:
   DEPLOY_PATH: /home/miska/linkshortener
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    name: Run Tests
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Run frontend tests
-      run: npm test -- --passWithNoTests --watchAll=false
-    
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.12'
-    
-    - name: Install Python dependencies
-      run: |
-        cd backend
-        pip install -r requirements.txt
-    
-    - name: Test Alembic migrations
-      run: |
-        cd backend
-        # Test that Alembic can initialize and run migrations
-        export AZURE_TENANT_ID=test-tenant
-        export AZURE_CLIENT_ID=test-client
-        export DATABASE_URL=sqlite:///test.db
-        export ENVIRONMENT=test
-        python -c "
-        import asyncio
-        from app.core.database import init_db
-        async def test():
-            await init_db()
-            print('✅ Alembic migrations test passed')
-        asyncio.run(test())
-        "
-    
-    - name: Run backend tests
-      run: |
-        cd backend
-        python -m pytest
-
   deploy:
     runs-on: ubuntu-latest
     name: Deploy to VM
-    needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
     
     steps:
     - name: Deploy to Azure VM

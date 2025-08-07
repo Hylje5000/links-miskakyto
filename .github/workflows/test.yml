@@ -6,6 +6,10 @@ on:
   push:
     branches: [ main ]
 
+concurrency:
+  group: test-suite-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   frontend-tests:
     name: Frontend Tests
